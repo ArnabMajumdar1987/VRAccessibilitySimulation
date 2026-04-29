@@ -711,5 +711,143 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+
+<!-- === ADDED ACCESSIBILITY SIMULATIONS === -->
+<script>
+STATIONS.push(
+{
+  id:'memory',
+  icon:'🧠',
+  name:'Memory Impairment',
+  sub:'Short-term recall difficulty',
+  desc:'Instructions disappear, forcing recall.',
+  simClass:'',
+  vrClass:'vr-memory',
+  simLabel:'Instructions disappear',
+  insight:'Keep instructions persistent.',
+  demo:()=>`
+    <div>
+      <div id="memory-instructions" style="padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:10px">
+        Remember this code: <strong>8392</strong>
+      </div>
+      <input type="text" placeholder="Enter the code..." />
+    </div>`
+},
+{
+  id:'tunnel',
+  icon:'👁️',
+  name:'Tunnel Vision',
+  sub:'Peripheral loss',
+  desc:'Only central vision available.',
+  simClass:'',
+  vrClass:'vr-tunnel',
+  simLabel:'Restricted field',
+  insight:'Avoid edge-only UI.',
+  demo:()=>`<p>Toggle simulation.</p>`
+},
+{
+  id:'adhd',
+  icon:'⚡',
+  name:'Attention Loss',
+  sub:'Focus disruption',
+  desc:'Focus constantly interrupted.',
+  simClass:'',
+  vrClass:'vr-adhd',
+  simLabel:'Focus disruption',
+  insight:'Avoid focus stealing.',
+  demo:()=>`<input type="text" placeholder="Try typing..." />`
+}
+);
+
+let adhdInterval = null;
+let vrADHDInterval = null;
+
+const oldRender = renderStation;
+renderStation = function(idx){
+  oldRender(idx);
+
+  const s = STATIONS[idx];
+  const chk = document.getElementById('sim-chk');
+
+  clearInterval(adhdInterval);
+  document.getElementById('tunnel-overlay').classList.remove('on');
+
+  if(!chk) return;
+
+  chk.addEventListener('change', e=>{
+    const enabled = e.target.checked;
+
+    if(s.id === 'memory'){
+      const el = document.getElementById('memory-instructions');
+      if(enabled){
+        setTimeout(()=> el && (el.style.display='none'), 3000);
+      } else if(el){
+        el.style.display='block';
+      }
+    }
+
+    if(s.id === 'tunnel'){
+      document.getElementById('tunnel-overlay')
+        .classList.toggle('on', enabled);
+    }
+
+    if(s.id === 'adhd'){
+      if(enabled){
+        adhdInterval = setInterval(()=>{
+          const els = document.querySelectorAll('input,button');
+          if(!els.length) return;
+          els[Math.floor(Math.random()*els.length)].focus();
+        }, 2500);
+      } else {
+        clearInterval(adhdInterval);
+      }
+    }
+  });
+};
+
+VR_SIM_MAP['memory'] = 'vr-memory';
+VR_SIM_MAP['tunnel'] = 'vr-tunnel';
+VR_SIM_MAP['adhd'] = 'vr-adhd';
+
+const oldApply = applyVRSim;
+applyVRSim = function(simId){
+  oldApply(simId);
+
+  clearInterval(vrADHDInterval);
+
+  if(simId === 'adhd'){
+    vrADHDInterval = setInterval(()=>{
+      const cam = document.getElementById('vr-camera');
+      if(!cam) return;
+      const x = (Math.random()-0.5)*0.1;
+      const y = (Math.random()-0.5)*0.1;
+      cam.object3D.rotation.x += x;
+      cam.object3D.rotation.y += y;
+    }, 500);
+  }
+};
+</script>
+
+<style>
+body.vr-tunnel::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:radial-gradient(circle at center,
+    transparent 20%, rgba(0,0,0,0.9) 70%);
+  pointer-events:none;
+  z-index:999;
+}
+
+body.vr-adhd #scene-wrap canvas {
+  animation: vrShake 0.2s infinite;
+}
+@keyframes vrShake {
+  0%{transform:translate(0,0)}
+  50%{transform:translate(2px,-2px)}
+  100%{transform:translate(0,0)}
+}
+</style>
+
 </body>
 </html>
