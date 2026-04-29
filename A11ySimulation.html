@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Accessibility Simulator — WebXR</title>
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg:#080c1a; --surface:#10102a; --surface2:#181838;
+      --border:rgba(196,184,255,0.14); --border-hi:rgba(196,184,255,0.45);
+      --accent:#7055ff; --text:#e8e4f0; --muted:#7a6fa0; --faint:#3a3460;
+      --danger:#ff6655; --warn:#ffaa44;
+    }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); overflow:hidden; height:100vh; }
+
+    /* ── LANDING ── */
+    #landing {
+      position:fixed;inset:0;z-index:1000;
+      background:radial-gradient(ellipse 80% 60% at 50% 30%,#1a1260 0%,var(--bg) 70%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:2rem;gap:1.6rem;transition:opacity 0.4s;
+    }
+    #landing.hidden{opacity:0;pointer-events:none;}
+    .logo{font-size:clamp(1.5rem,4vw,2.4rem);font-weight:800;letter-spacing:-0.03em;color:#c4b8ff;}
+    .tagline{font-size:0.95rem;color:var(--muted);text-align:center;max-width:500px;line-height:1.7;}
+    .mode-row{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;}
+    .mode-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;
+      padding:1.6rem 2rem;cursor:pointer;transition:all 0.2s;text-align:center;width:220px;}
+    .mode-card:hover{border-color:var(--border-hi);background:var(--surface2);transform:translateY(-3px);}
+    .mode-card .m-icon{font-size:2.4rem;margin-bottom:0.7rem;}
+    .mode-card .m-title{font-weight:700;font-size:1rem;color:#c4b8ff;margin-bottom:0.35rem;}
+    .mode-card .m-desc{font-size:0.76rem;color:var(--muted);line-height:1.5;}
+    .xr-note{font-size:0.74rem;color:var(--faint);text-align:center;}
+
+    /* ── DESKTOP MODE ── */
+    #desktop-mode{
+      position:fixed;inset:0;z-index:900;display:flex;flex-direction:column;
+      background:var(--bg);opacity:0;pointer-events:none;transition:opacity 0.4s;
+    }
+    #desktop-mode.visible{opacity:1;pointer-events:all;}
+
+    /* topbar */
+    #dt-topbar{
+      display:flex;align-items:center;gap:0.8rem;padding:0.65rem 1.2rem;
+      background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;
+    }
+    .tb-logo{font-weight:700;font-size:0.88rem;color:#c4b8ff;white-space:nowrap;}
+    .tb-sep{width:1px;height:20px;background:var(--border);flex-shrink:0;}
+    #dt-nav{display:flex;gap:5px;overflow-x:auto;flex:1;scrollbar-width:none;}
+    #dt-nav::-webkit-scrollbar{display:none;}
+    .dt-pill{flex-shrink:0;background:transparent;border:1px solid var(--border);border-radius:50px;
+      padding:0.28rem 0.75rem;font-size:0.72rem;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all 0.18s;}
+    .dt-pill:hover{border-color:var(--border-hi);color:#c4b8ff;}
+    .dt-pill.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .dt-arr{background:var(--surface);border:1px solid var(--border);border-radius:50%;
+      width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+      font-size:0.82rem;cursor:pointer;color:var(--muted);transition:all 0.15s;flex-shrink:0;}
+    .dt-arr:hover{border-color:var(--border-hi);color:var(--text);}
+    #dt-back{background:transparent;border:1px solid var(--border);border-radius:50px;
+      color:var(--muted);font-size:0.76rem;padding:0.28rem 0.9rem;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+    #dt-back:hover{border-color:var(--border-hi);color:var(--text);}
+
+    /* body */
+    #dt-body{flex:1;display:flex;overflow:hidden;}
+
+    /* sidebar */
+    #dt-sidebar{width:220px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:0.8rem 0;}
+    .st-item{display:flex;align-items:center;gap:9px;padding:0.55rem 1rem;cursor:pointer;
+      transition:background 0.15s;border-left:3px solid transparent;}
+    .st-item:hover{background:rgba(196,184,255,0.05);}
+    .st-item.active{background:rgba(112,85,255,0.12);border-left-color:var(--accent);}
+    .st-item .si-icon{font-size:1.1rem;flex-shrink:0;}
+    .st-item .si-name{font-size:0.78rem;font-weight:600;color:#c4b8ff;}
+    .st-item .si-sub{font-size:0.65rem;color:var(--muted);}
+
+    /* viewer */
+    #dt-viewer{flex:1;overflow-y:auto;padding:1.8rem;}
+    #demo-inner{display:flex;flex-direction:column;gap:1.4rem;max-width:740px;}
+
+    /* station header */
+    .station-header{display:flex;align-items:flex-start;gap:1.1rem;}
+    .sh-icon{font-size:2.8rem;line-height:1;background:var(--surface2);border-radius:14px;
+      padding:0.6rem;border:1px solid var(--border);flex-shrink:0;}
+    .sh-text h1{font-size:1.3rem;font-weight:700;color:#c4b8ff;margin-bottom:0.28rem;}
+    .sh-text p{font-size:0.85rem;color:var(--muted);line-height:1.65;max-width:580px;}
+
+    /* sim toggle */
+    .sim-toggle{display:flex;align-items:center;gap:0.8rem;background:var(--surface);
+      border:1px solid var(--border);border-radius:10px;padding:0.8rem 1.1rem;}
+    .sim-toggle label{font-size:0.82rem;color:var(--muted);flex:1;}
+    .sim-toggle label strong{color:var(--text);}
+    .toggle-switch{position:relative;width:42px;height:22px;flex-shrink:0;}
+    .toggle-switch input{opacity:0;width:0;height:0;}
+    .toggle-slider{position:absolute;inset:0;background:var(--faint);border-radius:22px;cursor:pointer;transition:background 0.2s;}
+    .toggle-slider::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;
+      background:#fff;left:3px;top:3px;transition:transform 0.2s;}
+    .toggle-switch input:checked + .toggle-slider{background:var(--accent);}
+    .toggle-switch input:checked + .toggle-slider::before{transform:translateX(20px);}
+    .toggle-switch input:disabled + .toggle-slider{opacity:0.35;cursor:default;}
+
+    /* demo panel */
+    .demo-panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.4rem;}
+    .demo-panel h3{font-size:0.68rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+      color:var(--muted);margin-bottom:1rem;}
+    .insight{background:rgba(112,85,255,0.08);border:1px solid rgba(112,85,255,0.25);
+      border-radius:10px;padding:0.9rem 1.1rem;font-size:0.82rem;color:#b8aee8;line-height:1.7;}
+    .insight strong{color:#c4b8ff;}
+
+    /* footer */
+    #dt-footer{border-top:1px solid var(--border);background:var(--surface);
+      padding:0.65rem 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+    .footer-info{font-size:0.76rem;color:var(--muted);}
+    .footer-info strong{color:#c4b8ff;}
+    #dt-dots{display:flex;gap:5px;align-items:center;}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--faint);transition:all 0.2s;cursor:pointer;}
+    .dot.active{background:var(--accent);transform:scale(1.4);}
+    .footer-nav{display:flex;gap:0.5rem;}
+    .fn-btn{background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+      padding:0.38rem 0.9rem;font-size:0.78rem;color:var(--muted);cursor:pointer;transition:all 0.15s;}
+    .fn-btn:hover{border-color:var(--border-hi);color:var(--text);}
+    .fn-btn:disabled{opacity:0.3;cursor:default;}
+
+    /* ── Sim filters on #dt-viewer ── */
+    .sim-color     #demo-inner{filter:url(#deuteranopia);}
+    .sim-lowvision #demo-inner{filter:blur(3px) contrast(0.6) brightness(0.5);}
+    .sim-photo     #demo-inner{animation:flicker 0.09s infinite;}
+    .sim-tremor    #demo-inner{animation:tremor 0.11s infinite;}
+    .sim-contrast  #demo-inner{filter:contrast(0.28) saturate(0.15) brightness(1.25);}
+    .sim-cataracts #demo-inner{filter:blur(4px) sepia(0.5) brightness(0.7);}
+    @keyframes flicker{0%{opacity:1}10%{opacity:0.05}20%{opacity:1}35%{opacity:0.5}50%{opacity:0}65%{opacity:1}100%{opacity:1}}
+    @keyframes tremor{
+      0%{transform:translate(0,0) rotate(0)}20%{transform:translate(-2px,1px) rotate(-.4deg)}
+      40%{transform:translate(2px,-1px) rotate(.3deg)}60%{transform:translate(-1px,2px) rotate(-.2deg)}
+      80%{transform:translate(1px,-2px) rotate(.4deg)}100%{transform:translate(0,0) rotate(0)}
+    }
+
+    /* ── Demo components ── */
+    .demo-form{display:flex;flex-direction:column;gap:11px;max-width:380px;}
+    .field-wrap input{width:100%;padding:0.55rem 0.8rem;background:var(--surface2);border-radius:7px;
+      border:2px solid #333;color:var(--text);font-size:0.86rem;outline:none;}
+    .field-error input{border-color:#cc2222;background:#2a0a0a;}
+    .field-ok    input{border-color:#22aa44;background:#0a2a12;}
+    .field-label{font-size:0.75rem;font-weight:600;margin-bottom:3px;}
+    .field-error .field-label{color:#cc2222;}
+    .field-ok    .field-label{color:#22aa44;}
+    .big-btn{padding:0.6rem 1.3rem;background:var(--accent);color:#fff;border:none;border-radius:7px;
+      font-size:0.88rem;cursor:pointer;margin-top:4px;}
+
+    .tiny-text-block{font-size:8px;line-height:1.35;font-family:Georgia,serif;
+      background:#fff;color:#222;padding:14px;border-radius:6px;max-width:480px;}
+
+    .strobe-ad{padding:1rem;border-radius:8px;text-align:center;font-weight:800;font-size:1.1rem;
+      animation:strobe-bg 0.12s infinite;max-width:420px;}
+    @keyframes strobe-bg{0%{background:#ff2200;color:#fff}50%{background:#0033ff;color:#fff}}
+    .ad-warn{font-size:0.75rem;color:var(--danger);margin-top:8px;}
+
+    .tiny-btn-group{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+    .tiny-btn{font-size:11px;padding:4px 7px;background:#334;color:#ccc;border:1px solid #556;border-radius:4px;cursor:pointer;}
+    .kbd{display:inline-block;background:var(--surface2);border:1px solid var(--border);
+      border-radius:4px;padding:1px 5px;font-size:0.7rem;font-family:monospace;color:var(--muted);}
+
+    .dyslexia-text{font-family:Georgia,serif;font-size:0.87rem;line-height:1.45;color:#ccc;max-width:500px;}
+    .dyslexia-text p{margin-bottom:9px;}
+
+    .chaos-page{max-width:520px;display:flex;flex-direction:column;gap:8px;}
+    .chaos-banner{padding:0.5rem 1rem;border-radius:6px;font-weight:700;font-size:0.88rem;
+      text-align:center;animation:pb 0.5s infinite alternate;}
+    .chaos-banner.orange{background:#ff6600;color:#fff;}
+    .chaos-banner.blue{background:#0066ff;color:#fff;}
+    @keyframes pb{from{opacity:0.5}to{opacity:1}}
+    .cookie-bar{background:#1a1a1a;color:#888;border:1px solid #333;font-size:0.7rem;padding:0.5rem 0.8rem;border-radius:6px;}
+    .cookie-bar a{color:#5588ff;}
+
+    .video-stub{background:#111;border-radius:8px;padding:1.8rem;text-align:center;max-width:380px;}
+    .caption-list{background:#1a0a0a;border:1px solid #aa3322;border-radius:7px;padding:0.7rem 1rem;
+      font-size:0.78rem;color:var(--danger);max-width:380px;}
+    .caption-list li{margin-left:1rem;margin-top:3px;}
+
+    .icon-soup{display:flex;gap:14px;font-size:1.8rem;margin-bottom:12px;}
+    .sr-announce{background:#1a1520;border:1px solid #443366;border-radius:8px;padding:0.8rem 1rem;
+      font-size:0.78rem;font-family:monospace;color:#ffaa55;max-width:420px;}
+    .fake-filename{color:var(--danger);font-size:0.75rem;font-family:monospace;margin-top:8px;}
+
+    /* Tunnel overlay */
+    #tunnel-overlay{display:none;position:fixed;inset:0;z-index:800;pointer-events:none;
+      background:radial-gradient(ellipse 36% 36% at 50% 50%,
+        transparent 0%,transparent 28%,rgba(0,0,0,0.75) 52%,rgba(0,0,0,0.97) 72%,black 100%);}
+    #tunnel-overlay.on{display:block;}
+
+    /* ── VR scene wrapper ── */
+    #scene-wrap{position:fixed;inset:0;z-index:1;}
+    #scene-wrap canvas{transition:filter 0.5s;}
+    body.vr-color    #scene-wrap canvas{filter:url(#deuteranopia);}
+    body.vr-lowvis   #scene-wrap canvas{filter:blur(3px) contrast(0.65) brightness(0.55);}
+    body.vr-photo    #scene-wrap canvas{animation:flicker 0.09s infinite;}
+    body.vr-tremor   #scene-wrap canvas{animation:tremor 0.11s infinite;}
+    body.vr-contrast #scene-wrap canvas{filter:contrast(0.28) saturate(0.15) brightness(1.25);}
+    body.vr-cataract #scene-wrap canvas{filter:blur(4px) sepia(0.5) brightness(0.7);}
+
+    /* VR hud */
+    #vr-hud{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:500;
+      background:rgba(10,10,20,0.85);border:1px solid rgba(196,184,255,0.22);border-radius:50px;
+      padding:0.5rem 1.4rem;font-size:0.82rem;color:#c4b8ff;display:none;gap:1rem;align-items:center;}
+    #vr-hud.on{display:flex;}
+    #vr-hud-label{font-weight:700;}
+    #vr-exit{background:rgba(196,184,255,0.15);border:none;border-radius:20px;color:#c4b8ff;
+      padding:0.3rem 0.9rem;font-size:0.78rem;cursor:pointer;}
+  </style>
+
+  <svg style="position:absolute;width:0;height:0" aria-hidden="true">
+    <defs>
+      <filter id="deuteranopia">
+        <feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/>
+      </filter>
+    </defs>
+  </svg>
+</head>
+<body>
+
+<div id="tunnel-overlay"></div>
+
+<!-- ══ LANDING ══ -->
+<div id="landing">
+  <div class="logo">♿ Accessibility Simulator</div>
+  <p class="tagline">Experience digital interfaces through 8 disability perspectives.<br>Choose how you'd like to explore.</p>
+  <div class="mode-row">
+    <div class="mode-card" id="btn-desktop">
+      <div class="m-icon">🖥</div>
+      <div class="m-title">Desktop Mode</div>
+      <div class="m-desc">Navigate stations with mouse, keyboard, or sidebar. Interactive demos. No headset needed.</div>
+    </div>
+    <div class="mode-card" id="btn-vr">
+      <div class="m-icon">🥽</div>
+      <div class="m-title">VR / Meta Quest</div>
+      <div class="m-desc">Immersive 3-D environment. Walk between stations, gaze to activate each simulation.</div>
+    </div>
+  </div>
+  <p class="xr-note">Meta Quest: open in Quest Browser → choose VR mode → tap Enter VR</p>
+</div>
+
+<!-- ══ DESKTOP MODE ══ -->
+<div id="desktop-mode">
+  <div id="dt-topbar">
+    <span class="tb-logo">♿ A11y Simulator</span>
+    <div class="tb-sep"></div>
+    <div id="dt-nav"></div>
+    <div style="display:flex;gap:5px;flex-shrink:0;">
+      <div class="dt-arr" id="arr-prev" title="Previous (←)">&#8592;</div>
+      <div class="dt-arr" id="arr-next" title="Next (→)">&#8594;</div>
+    </div>
+    <button id="dt-back">← Back</button>
+  </div>
+  <div id="dt-body">
+    <div id="dt-sidebar"></div>
+    <div id="dt-viewer"><div id="demo-inner"></div></div>
+  </div>
+  <div id="dt-footer">
+    <div class="footer-info">Station <strong id="ft-num">1</strong> of <strong>8</strong> &nbsp;·&nbsp; <span id="ft-name">–</span></div>
+    <div id="dt-dots"></div>
+    <div class="footer-nav">
+      <button class="fn-btn" id="fn-prev">&#8592; Prev</button>
+      <button class="fn-btn" id="fn-next">Next &#8594;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VR HUD ══ -->
+<div id="vr-hud">
+  <span id="vr-hud-label">Normal Vision</span>
+  <button id="vr-exit" onclick="exitVR()">← Exit VR</button>
+</div>
+
+<!-- ══ A-FRAME SCENE ══ -->
+<div id="scene-wrap">
+<a-scene id="main-scene" embedded
+  webxr="referenceSpaceType:local-floor;optionalFeatures:local-floor,bounded-floor,hand-tracking"
+  vr-mode-ui="enabled:false"
+  renderer="colorManagement:true;antialias:true"
+  background="color:#080c1a"
+  style="width:100vw;height:100vh">
+  <a-assets>
+    <img id="grid-tex" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23090d1f'/%3E%3Crect width='64' height='1' fill='%23ffffff0d'/%3E%3Crect width='1' height='64' fill='%23ffffff0d'/%3E%3C/svg%3E"/>
+  </a-assets>
+  <a-light type="ambient" color="#223" intensity="0.9"></a-light>
+  <a-light type="directional" position="2 6 3" color="#aabbff" intensity="1.1"></a-light>
+  <a-light type="point" position="-3 3 -2" color="#9977ff" intensity="0.6" distance="12"></a-light>
+  <a-plane rotation="-90 0 0" width="50" height="50" src="#grid-tex" repeat="25 25" material="roughness:0.9;color:#0d1128"></a-plane>
+
+  <a-entity position="-8 0 -5">
+    <a-box position="0 1.2 0" width="3.2" height="2.4" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 1.8 0.07" text="value:1. Colour Blindness;color:#c4b8ff;width:2.8;align:center;wrapCount:24;"></a-entity>
+    <a-box position="-0.6 1.0 0.07" width="1.1" height="0.3" depth="0.01" material="color:#cc2222" class="vr-cl" data-sim="color-blindness"></a-box>
+    <a-entity position="-0.6 1.0 0.13" text="value:Error field;color:#fff;width:1;align:center;wrapCount:12;"></a-entity>
+    <a-box position="0.6 1.0 0.07" width="1.1" height="0.3" depth="0.01" material="color:#22aa44" class="vr-cl" data-sim="color-blindness"></a-box>
+    <a-entity position="0.6 1.0 0.13" text="value:Valid field;color:#fff;width:1;align:center;wrapCount:12;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="color-blindness" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-entity position="-4 0 -9">
+    <a-box position="0 1.2 0" width="3.2" height="2.4" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 1.8 0.07" text="value:2. Low Vision;color:#c4b8ff;width:2.8;align:center;wrapCount:24;"></a-entity>
+    <a-entity position="0 1.1 0.07" text="value:Privacy Policy · Terms\nCookie Notice · 8px text\n(impossible to read);color:#555;width:2.8;align:center;wrapCount:34;size:0.24;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="low-vision" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-entity position="0 0 -10">
+    <a-box position="0 1.2 0" width="3.2" height="2.4" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 1.8 0.07" text="value:3. Photosensitivity;color:#c4b8ff;width:2.8;align:center;wrapCount:24;"></a-entity>
+    <a-box position="0 1.0 0.07" width="2.4" height="1.0" depth="0.01"
+      animation="property:material.color;from:#ff2200;to:#002aff;dur:120;loop:true;easing:linear"
+      material="color:#ff2200;emissive:#ff2200;emissiveIntensity:1"></a-box>
+    <a-entity position="0 1.0 0.13" text="value:FLASH SALE 50% OFF;color:#fff;width:2;align:center;wrapCount:18;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="photosensitivity" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-entity position="4 0 -9">
+    <a-box position="0 1.2 0" width="3.2" height="2.4" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 1.8 0.07" text="value:4. Motor Tremor;color:#c4b8ff;width:2.8;align:center;wrapCount:24;"></a-entity>
+    <a-box position="-0.8 1.1 0.07" width="0.14" height="0.14" depth="0.01" material="color:#cc2222"></a-box>
+    <a-box position="0.1 0.9 0.07" width="0.16" height="0.16" depth="0.01" material="color:#225588"></a-box>
+    <a-box position="0.7 1.15 0.07" width="0.12" height="0.12" depth="0.01" material="color:#556622"></a-box>
+    <a-entity position="0 0.45 0.07" text="value:Tiny targets — no keyboard fallback;color:#888;width:2.8;align:center;wrapCount:30;size:0.28;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="tremor" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-entity position="8 0 -5">
+    <a-box position="0 1.2 0" width="3.8" height="2.8" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 2.1 0.07" text="value:5. Dyslexia;color:#c4b8ff;width:3;align:center;wrapCount:24;"></a-entity>
+    <a-entity position="0 1.3 0.07" text="value:Bi agrneeing to thse Trems\nyuo ackwoledge taht yuo hvae\nraed teh folowing privcy plciy.\nYuo cuonld be fined up to €2,00\nif teh infomration is flaes.;color:#ccc;width:3.2;align:left;wrapCount:36;size:0.28;lineHeight:1.4;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="dyslexia" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-entity position="9 0 0">
+    <a-box position="0 1.2 0" width="3.8" height="3.2" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 2.4 0.07" text="value:6. Cognitive / ADHD;color:#c4b8ff;width:3;align:center;wrapCount:24;"></a-entity>
+    <a-entity position="0 1.8 0.07" text="value:🚨 YOU WON — VISITOR #1000000;color:#ffdd00;width:3;align:center;wrapCount:28;"></a-entity>
+    <a-box position="-0.9 1.2 0.07" width="1.1" height="0.26" depth="0.01" material="color:#ff6600;emissive:#ff6600;emissiveIntensity:0.6" animation="property:material.emissiveIntensity;from:0.1;to:1;dur:400;loop:true;dir:alternate"></a-box>
+    <a-entity position="-0.9 1.2 0.13" text="value:CLAIM NOW!!;color:#fff;width:1;align:center;size:0.36;"></a-entity>
+    <a-box position="0.9 1.2 0.07" width="1.1" height="0.26" depth="0.01" material="color:#0077ff;emissive:#0077ff;emissiveIntensity:0.6" animation="property:material.emissiveIntensity;from:0.1;to:1;dur:600;loop:true;dir:alternate"></a-box>
+    <a-entity position="0.9 1.2 0.13" text="value:SUBSCRIBE;color:#fff;width:1;align:center;size:0.36;"></a-entity>
+    <a-entity position="0 0.65 0.07" text="value:Cookie · Newsletter · Autoplay · Chat · Notifications;color:#555;width:3.4;align:center;wrapCount:38;size:0.24;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="cognitive" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-entity position="6 0 5">
+    <a-box position="0 1.2 0" width="3.6" height="2.8" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 2.1 0.07" text="value:7. Hearing Impairment;color:#c4b8ff;width:3;align:center;wrapCount:24;"></a-entity>
+    <a-box position="0 1.3 0.07" width="2.8" height="1.1" depth="0.01" material="color:#111;emissive:#001133;emissiveIntensity:0.3"></a-box>
+    <a-entity position="0 1.3 0.13" text="value:▶;color:#ffffff44;width:1.5;align:center;size:1.2;"></a-entity>
+    <a-entity position="0 0.55 0.07" text="value:✗ No captions  ✗ No transcript\n✗ Audio-only error messages;color:#ff6655;width:3;align:center;wrapCount:34;size:0.28;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="hearing" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-entity position="-3 0 5">
+    <a-box position="0 1.2 0" width="3.6" height="2.8" depth="0.1" material="color:#1a1a3a"></a-box>
+    <a-entity position="0 2.1 0.07" text="value:8. Screen Reader;color:#c4b8ff;width:3;align:center;wrapCount:24;"></a-entity>
+    <a-entity position="-1.1 1.5 0.07" text="value:🔔;color:#fff;width:0.8;align:center;size:0.55;"></a-entity>
+    <a-entity position="-0.4 1.5 0.07" text="value:🛒;color:#fff;width:0.8;align:center;size:0.55;"></a-entity>
+    <a-entity position="0.3 1.5 0.07" text="value:👤;color:#fff;width:0.8;align:center;size:0.55;"></a-entity>
+    <a-entity position="1.0 1.5 0.07" text="value:⚙;color:#fff;width:0.8;align:center;size:0.55;"></a-entity>
+    <a-entity position="0 1.0 0.07" text="value:SR: 'button button button button'\n— no context, no labels;color:#ff9944;width:3;align:center;wrapCount:34;size:0.28;"></a-entity>
+    <a-cylinder position="0 0.01 0.8" radius="0.55" height="0.02" class="vr-cl" data-sim="screen-reader" material="color:#2a1a6e;emissive:#4422cc;emissiveIntensity:0.4"></a-cylinder>
+  </a-entity>
+
+  <a-cylinder position="0 1.5 0" radius="0.35" height="3" material="color:#1a1050;emissive:#2a1080;emissiveIntensity:0.3"></a-cylinder>
+  <a-entity position="0 3.3 0" text="value:DIGITAL ACCESSIBILITY SIMULATOR;color:#c4b8ff;width:5;align:center;font:sourcecodepro;wrapCount:30;"></a-entity>
+  <a-entity position="0 2.7 0" text="value:Gaze at floor disc to activate sim;color:#8880aa;width:4;align:center;size:0.35;wrapCount:36;"></a-entity>
+
+  <a-entity id="player-rig" position="0 0 3">
+    <a-entity id="vr-camera" camera look-controls wasd-controls position="0 1.6 0">
+      <a-entity cursor="fuse:true;fuseTimeout:1500" raycaster="objects:.vr-cl;far:20"
+        position="0 0 -1"
+        geometry="primitive:ring;radiusInner:0.02;radiusOuter:0.03"
+        material="color:#c4b8ff;shader:flat;opacity:0.85"
+        animation__fusing="property:scale;startEvents:fusing;from:1 1 1;to:0.1 0.1 0.1;dur:1500;easing:easeInCubic"
+        animation__leave="property:scale;startEvents:mouseleave;to:1 1 1;dur:150">
+      </a-entity>
+    </a-entity>
+  </a-entity>
+</a-scene>
+</div>
+
+<script>
+/* ─── Station data ─────────────────────────── */
+const STATIONS = [
+  {
+    id:'color-blindness', icon:'🎨', name:'Colour Blindness', sub:'Deuteranopia (red–green)',
+    desc:'About 8% of men and 0.5% of women have colour vision deficiency. When interfaces use colour alone to signal meaning — red for error, green for success — these users receive zero information.',
+    simClass:'sim-color', vrClass:'vr-color', simLabel:'Deuteranopia colour filter',
+    insight:'<strong>Bad practice:</strong> Form fields use only border colour to indicate error/valid state.<br><strong>Fix:</strong> Add an icon (✗/✓) and a text label alongside any colour indicator. Never rely on colour alone (WCAG 1.4.1).',
+    demo:()=>`
+      <div class="demo-form">
+        <div class="field-wrap field-error">
+          <div class="field-label">Email address</div>
+          <input type="text" value="not-an-email" />
+        </div>
+        <div class="field-wrap field-ok">
+          <div class="field-label">Username</div>
+          <input type="text" value="johndoe_92" />
+        </div>
+        <div class="field-wrap field-error">
+          <div class="field-label">Password (too short)</div>
+          <input type="password" value="abc" />
+        </div>
+        <button class="big-btn">Submit</button>
+      </div>
+      <p style="margin-top:12px;font-size:0.76rem;color:var(--muted)">Toggle the simulation — can you still tell which fields have errors?</p>`
+  },
+  {
+    id:'low-vision', icon:'🔍', name:'Low Vision', sub:'Blur + contrast reduction',
+    desc:'Over 246 million people worldwide have moderate to severe vision impairment. They rely on high contrast, large text, and browser zoom. Many sites lock font sizes and use 8–10px footer text.',
+    simClass:'sim-lowvision', vrClass:'vr-lowvis', simLabel:'Blur + contrast/brightness reduction',
+    insight:'<strong>Bad practice:</strong> Fixed pixel font sizes, disabled zoom, low contrast (1.8:1 ratio) footer text.<br><strong>Fix:</strong> Use relative units (rem/em), never set <code>user-scalable=no</code>, minimum 4.5:1 contrast ratio (WCAG 1.4.3).',
+    demo:()=>`
+      <div class="tiny-text-block">
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">SETTINGS</div>
+        <p>Privacy Policy &nbsp;·&nbsp; Terms of Service &nbsp;·&nbsp; Cookie Notice &nbsp;·&nbsp; Accessibility Statement</p>
+        <p style="margin-top:6px">Accessibility: <span style="color:#999">OFF</span> &nbsp; Notifications: <span style="color:#555">ON</span></p>
+        <p style="margin-top:6px">To enable high-contrast mode navigate to Settings &gt; Display &gt; Accessibility &gt; High Contrast. This option requires a page reload and is only available on desktop browsers.</p>
+        <p style="margin-top:6px;font-size:7px;color:#bbb">© 2024 ExampleCorp Inc. All rights reserved. By continuing to use this site you agree to our terms. Contact: legal@examplecorp.com</p>
+      </div>`
+  },
+  {
+    id:'photosensitivity', icon:'⚡', name:'Photosensitivity', sub:'Flicker / seizure risk',
+    desc:'Approximately 1 in 100 people have photosensitive epilepsy. Content flashing more than 3 times per second can trigger seizures. WCAG 2.3.1 (Level A) prohibits this, yet autoplay ads routinely violate it.',
+    simClass:'sim-photo', vrClass:'vr-photo', simLabel:'Full-screen flicker (use with caution)',
+    insight:'<strong>Bad practice:</strong> Autoplay ad with rapid colour strobe, no pause control, no seizure warning.<br><strong>Fix:</strong> Never flash more than 3× per second. Always provide pause/stop controls. Warn users before playing flashing content.',
+    demo:()=>`
+      <div class="strobe-ad">⚡ FLASH SALE — 50% OFF NOW!!</div>
+      <p class="ad-warn">⚠ No pause/stop control &nbsp;·&nbsp; ⚠ No seizure warning &nbsp;·&nbsp; ⚠ Cannot dismiss</p>
+      <p style="margin-top:12px;font-size:0.76rem;color:var(--muted)">The demo already runs at a reduced rate. <strong>Activating the simulation applies full-screen flicker — caution if you are photosensitive.</strong></p>`
+  },
+  {
+    id:'tremor', icon:'🤲', name:'Motor / Tremor', sub:'Precision & tiny click targets',
+    desc:'Motor disabilities include tremors, limited fine motor control, and spasticity. Millions rely on keyboards, switch access, or voice navigation. Small targets and no keyboard shortcuts exclude these users.',
+    simClass:'sim-tremor', vrClass:'vr-tremor', simLabel:'Involuntary movement animation',
+    insight:'<strong>Bad practice:</strong> Buttons smaller than 24×24px with no keyboard alternative.<br><strong>Fix:</strong> WCAG 2.5.5 requires targets of at least 44×44px. Every action must be keyboard-accessible via Tab/Enter/Space.',
+    demo:()=>`
+      <p style="font-size:0.83rem;color:var(--muted);margin-bottom:12px">Try clicking these buttons, then activate the tremor simulation:</p>
+      <div class="tiny-btn-group">
+        <button class="tiny-btn">×</button>
+        <button class="tiny-btn">✓</button>
+        <button class="tiny-btn">▶</button>
+        <button class="tiny-btn">⚙</button>
+        <button class="tiny-btn">i</button>
+        <button class="tiny-btn">…</button>
+      </div>
+      <p style="font-size:0.72rem;color:var(--muted);margin-top:9px">All buttons are 11px — no keyboard shortcut available for any action.</p>
+      <div style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:7px;font-size:0.8rem;color:var(--muted)">
+        <span class="kbd">Tab</span> focus? <span style="color:var(--danger)">Not implemented.</span> &nbsp;
+        <span class="kbd">Enter</span> to confirm? <span style="color:var(--danger)">Not implemented.</span>
+      </div>`
+  },
+  {
+    id:'dyslexia', icon:'📖', name:'Dyslexia', sub:'Text / reading difficulty',
+    desc:'Dyslexia affects ~15–20% of the population, causing difficulty decoding written words. Dense serif paragraphs, justified text, and lack of spacing make reading overwhelming.',
+    simClass:'', vrClass:'', simLabel:'No filter needed — text itself demonstrates it',
+    insight:'<strong>Bad practice:</strong> Serif font, no spacing, justified text, dense legal block.<br><strong>Fix:</strong> Use sans-serif fonts, left-align text, 1.5× line height, short paragraphs, and generous letter-spacing. Consider supporting OpenDyslexic.',
+    demo:()=>`
+      <div class="dyslexia-text">
+        <p>Bi agrneeing to thse Trems and Cnoditinos yuo ackwoledge taht yuo hvae raed, undrestood, and agree to be buond bi all apalicbale lwas and rgualtoins.</p>
+        <p>Yuo furhter ackwoledge taht teh Cmopany rseervs teh rghit to moidfy thees trems at ani tmie wihtuot prorped noctie. Yoru cnoitunued use of teh srevice cuosntitets yor acpetacne.</p>
+        <p>Failuer to cmopy wih thees trems mya rsult in immedaite termniaiton fo yoru accuont and posislbe lagel atcion. Plsaee raed craefully bfoere pocredeing.</p>
+      </div>
+      <p style="margin-top:12px;font-size:0.76rem;color:var(--muted)">No toggle needed — the text itself demonstrates the experience. (Simulation toggle disabled.)</p>`
+  },
+  {
+    id:'cognitive', icon:'🧠', name:'Cognitive / ADHD', sub:'Overload & distraction',
+    desc:'Cognitive disabilities, ADHD, anxiety, and autism-spectrum conditions affect tens of millions. Cluttered interfaces with autoplay media, flashing banners, cookie dialogs, and chat widgets create overwhelming cognitive load.',
+    simClass:'sim-contrast', vrClass:'vr-contrast', simLabel:'Low contrast distraction filter',
+    insight:'<strong>Bad practice:</strong> Simultaneous cookie banner, newsletter popup, live chat, autoplay video, and 3 animated CTAs.<br><strong>Fix:</strong> One action at a time. Offer a "focus mode". Never autoplay media. Allow all dialogs to be permanently dismissed.',
+    demo:()=>`
+      <div class="chaos-page">
+        <div class="chaos-banner orange">🚨 YOU ARE VISITOR #1,000,000 — CLAIM YOUR PRIZE NOW!!</div>
+        <div class="chaos-banner blue">📧 Subscribe to our newsletter — FREE forever!</div>
+        <div style="background:var(--surface2);padding:9px 12px;border-radius:6px;font-size:0.8rem;color:var(--muted)">
+          ▶ <strong style="color:var(--text)">Autoplay video</strong> — Volume: MAX &nbsp; [Cannot mute] &nbsp; [Cannot pause]
+          <div style="margin-top:5px;height:5px;background:linear-gradient(90deg,var(--accent) 45%,#333 45%);border-radius:3px"></div>
+        </div>
+        <div class="cookie-bar">🍪 We use cookies. <a href="#">Accept All</a> · <a href="#">Reject All</a> · <a href="#">Manage Preferences</a> · <a href="#">Learn More</a> · <a href="#">Privacy Policy</a> · <a href="#">Cookie Policy</a></div>
+        <div style="padding:7px 10px;background:#0a1a2a;border:1px solid #1a3a5a;border-radius:6px;font-size:0.76rem;color:#5588ff">
+          💬 Chat with us! Hi there — is there anything I can help you with today?
+        </div>
+        <div style="font-size:0.75rem;color:var(--danger);padding:3px 0">
+          🔔 Allow notifications? [Allow] [Block] &nbsp;— Also: <em>app wants microphone access</em>
+        </div>
+      </div>`
+  },
+  {
+    id:'hearing', icon:'👂', name:'Hearing Impairment', sub:'No captions / transcripts',
+    desc:'About 466 million people have disabling hearing loss. Video without captions, audio-only error messages, and content without text alternatives are completely inaccessible. WCAG 1.2 requires captions for all pre-recorded audio.',
+    simClass:'sim-cataracts', vrClass:'vr-cataract', simLabel:'Visual impairment overlay',
+    insight:'<strong>Bad practice:</strong> Video with no closed captions, no transcript, audio-only error beeps.<br><strong>Fix:</strong> Always provide closed captions (CC), full transcript, and never use audio as the only channel for critical information.',
+    demo:()=>`
+      <div class="video-stub">
+        <div style="font-size:2.8rem;color:#444;margin-bottom:6px">▶</div>
+        <div style="font-size:0.78rem;color:#444">Important onboarding video — 4:32</div>
+        <div style="margin-top:6px;font-size:0.7rem;color:#333">[No captions track available]</div>
+      </div>
+      <div class="caption-list" style="margin-top:12px">
+        <strong>Missing:</strong>
+        <ul>
+          <li>✗ No closed captions (CC)</li>
+          <li>✗ No written transcript</li>
+          <li>✗ No ASL / BSL version</li>
+          <li>✗ Audio-only error beep — no visual feedback</li>
+          <li>✗ "Press 1 to confirm" style interaction</li>
+        </ul>
+      </div>`
+  },
+  {
+    id:'screen-reader', icon:'📢', name:'Screen Reader', sub:'Missing labels & alt text',
+    desc:'Blind and low-vision users navigate with screen readers (NVDA, JAWS, VoiceOver). Icon buttons without aria-labels announce only "button". Images without alt text read out the raw filename. Unlabelled forms are completely unusable.',
+    simClass:'', vrClass:'', simLabel:'Semantic audit — no visual filter needed',
+    insight:'<strong>Bad practice:</strong> Icon buttons with no aria-label, images with filename as alt text, decorative icons read aloud.<br><strong>Fix:</strong> Add <code>aria-label</code> to icon buttons. Write meaningful <code>alt</code> text. Mark decorative images with <code>alt=""</code>.',
+    demo:()=>`
+      <div class="icon-soup">
+        <span title="(no label)">🔔</span>
+        <span title="(no label)">🛒</span>
+        <span title="(no label)">👤</span>
+        <span title="(no label)">⚙</span>
+        <span title="(no label)">📤</span>
+      </div>
+      <div class="sr-announce">
+        <div style="font-size:0.68rem;color:#887;margin-bottom:6px">▶ SCREEN READER OUTPUT:</div>
+        "button" … "button" … "button" … "button" … "button"<br><br>
+        (pause) "image: IMG_20231023_143502_final_REVISED_v2_USE-THIS-ONE.jpg"<br><br>
+        (pause) "link: click here" … "link: click here" … "link: read more"
+      </div>
+      <div class="fake-filename">&lt;img src="hero.jpg" alt="IMG_20231023_143502_final_REVISED_v2_USE-THIS-ONE.jpg"&gt;</div>
+      <p style="margin-top:11px;font-size:0.76rem;color:var(--muted)">No visual simulation needed — the screen reader output above demonstrates the experience.</p>`
+  },
+];
+
+/* ─── State ────────────────────────────────── */
+let mode = null;
+let currentIdx = 0;
+const SIM_CLASSES = ['sim-color','sim-lowvision','sim-photo','sim-tremor','sim-contrast','sim-cataracts'];
+const VR_CLASSES  = ['vr-color','vr-lowvis','vr-photo','vr-tremor','vr-contrast','vr-cataract'];
+
+/* ─── Build desktop chrome ──────────────────── */
+function buildChrome() {
+  const nav = document.getElementById('dt-nav');
+  const sb  = document.getElementById('dt-sidebar');
+  const dots = document.getElementById('dt-dots');
+  nav.innerHTML = ''; sb.innerHTML = ''; dots.innerHTML = '';
+
+  STATIONS.forEach((s, i) => {
+    const pill = document.createElement('div');
+    pill.className = 'dt-pill'; pill.dataset.idx = i;
+    pill.textContent = s.icon + ' ' + s.name;
+    pill.addEventListener('click', () => goTo(i));
+    nav.appendChild(pill);
+
+    const item = document.createElement('div');
+    item.className = 'st-item'; item.dataset.idx = i;
+    item.innerHTML = `<span class="si-icon">${s.icon}</span><div><div class="si-name">${s.name}</div><div class="si-sub">${s.sub}</div></div>`;
+    item.addEventListener('click', () => goTo(i));
+    sb.appendChild(item);
+
+    const dot = document.createElement('div');
+    dot.className = 'dot'; dot.dataset.idx = i;
+    dot.addEventListener('click', () => goTo(i));
+    dots.appendChild(dot);
+  });
+}
+
+/* ─── Render a station ───────────────────────── */
+function renderStation(idx) {
+  const s = STATIONS[idx];
+  const dtv = document.getElementById('dt-viewer');
+
+  // clear sims
+  SIM_CLASSES.forEach(c => dtv.classList.remove(c));
+  document.getElementById('tunnel-overlay').classList.remove('on');
+
+  // Build content
+  const inner = document.getElementById('demo-inner');
+  const hasToggle = !!s.simClass;
+  inner.innerHTML = `
+    <div class="station-header">
+      <div class="sh-icon">${s.icon}</div>
+      <div class="sh-text">
+        <h1>${s.name}</h1>
+        <p>${s.desc}</p>
+      </div>
+    </div>
+    <div class="sim-toggle">
+      <label><strong>Simulate: ${s.simLabel}</strong> — toggle to apply the effect to the demo below</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="sim-chk" ${hasToggle ? '' : 'disabled'} />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="demo-panel">
+      <h3>Live demo — bad accessibility practice</h3>
+      <div id="demo-content">${s.demo()}</div>
+    </div>
+    <div class="insight">💡 ${s.insight}</div>
+    <div style="font-size:0.72rem;color:var(--faint);padding-bottom:1rem">
+      Use <span class="kbd">←</span> <span class="kbd">→</span> arrow keys to navigate stations &nbsp;·&nbsp; Station ${idx+1} of ${STATIONS.length}
+    </div>`;
+
+  // Bind toggle
+  const chk = document.getElementById('sim-chk');
+  if (chk && s.simClass) {
+    chk.addEventListener('change', e => dtv.classList.toggle(s.simClass, e.target.checked));
+  }
+
+  // Update nav state
+  document.querySelectorAll('.dt-pill').forEach(p  => p.classList.toggle('active', +p.dataset.idx === idx));
+  document.querySelectorAll('.st-item').forEach(p  => p.classList.toggle('active', +p.dataset.idx === idx));
+  document.querySelectorAll('.dot').forEach(p      => p.classList.toggle('active', +p.dataset.idx === idx));
+  document.getElementById('ft-num').textContent    = idx + 1;
+  document.getElementById('ft-name').textContent   = s.name;
+  document.getElementById('fn-prev').disabled      = idx === 0;
+  document.getElementById('fn-next').disabled      = idx === STATIONS.length - 1;
+
+  // Scroll active items into view
+  document.querySelector(`.st-item[data-idx="${idx}"]`)?.scrollIntoView({block:'nearest',behavior:'smooth'});
+  document.querySelector(`.dt-pill[data-idx="${idx}"]`)?.scrollIntoView({block:'nearest',behavior:'smooth',inline:'center'});
+
+  currentIdx = idx;
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= STATIONS.length) return;
+  renderStation(idx);
+}
+
+/* ─── Mode buttons ───────────────────────────── */
+document.getElementById('btn-desktop').addEventListener('click', () => {
+  mode = 'desktop';
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('desktop-mode').classList.add('visible');
+  buildChrome();
+  renderStation(0);
+});
+
+document.getElementById('btn-vr').addEventListener('click', () => {
+  mode = 'vr';
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('vr-hud').classList.add('on');
+  const scene = document.getElementById('main-scene');
+  if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if(ok) scene.enterVR(); });
+});
+
+document.getElementById('dt-back').addEventListener('click', () => {
+  SIM_CLASSES.forEach(c => document.getElementById('dt-viewer').classList.remove(c));
+  document.getElementById('tunnel-overlay').classList.remove('on');
+  document.getElementById('desktop-mode').classList.remove('visible');
+  document.getElementById('landing').classList.remove('hidden');
+  mode = null;
+});
+
+/* ─── Navigation controls ────────────────────── */
+document.getElementById('fn-prev').addEventListener('click', () => goTo(currentIdx - 1));
+document.getElementById('fn-next').addEventListener('click', () => goTo(currentIdx + 1));
+document.getElementById('arr-prev').addEventListener('click', () => goTo(currentIdx - 1));
+document.getElementById('arr-next').addEventListener('click', () => goTo(currentIdx + 1));
+
+document.addEventListener('keydown', e => {
+  if (mode !== 'desktop') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  goTo(currentIdx + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    goTo(currentIdx - 1);
+});
+
+/* ─── VR sim application ─────────────────────── */
+const VR_SIM_MAP = {
+  'color-blindness':'vr-color', 'low-vision':'vr-lowvis',
+  'photosensitivity':'vr-photo', 'tremor':'vr-tremor',
+  'cognitive':'vr-contrast', 'hearing':'vr-cataract',
+};
+
+function applyVRSim(simId) {
+  VR_CLASSES.forEach(c => document.body.classList.remove(c));
+  document.getElementById('tunnel-overlay').classList.remove('on');
+  const cls = VR_SIM_MAP[simId];
+  if (cls) document.body.classList.add(cls);
+  const s = STATIONS.find(x => x.id === simId);
+  document.getElementById('vr-hud-label').textContent = s ? s.name : 'Normal Vision';
+}
+
+function exitVR() {
+  VR_CLASSES.forEach(c => document.body.classList.remove(c));
+  document.getElementById('tunnel-overlay').classList.remove('on');
+  document.getElementById('vr-hud').classList.remove('on');
+  document.getElementById('landing').classList.remove('hidden');
+  mode = null;
+  const scene = document.getElementById('main-scene');
+  if (scene.is('vr-mode')) scene.exitVR();
+}
+
+/* ─── A-Frame scene init ─────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  const scene = document.getElementById('main-scene');
+  scene.addEventListener('loaded', () => {
+    document.querySelectorAll('.vr-cl').forEach(el => {
+      el.addEventListener('click', () => applyVRSim(el.dataset.sim || 'none'));
+    });
+  });
+  scene.addEventListener('enter-vr', () => document.getElementById('vr-hud').classList.add('on'));
+  scene.addEventListener('exit-vr', () => {
+    if (mode === 'vr') {
+      document.getElementById('vr-hud').classList.remove('on');
+      document.getElementById('landing').classList.remove('hidden');
+      mode = null;
+    }
+  });
+});
+</script>
+
+<!-- === ADDED ACCESSIBILITY SIMULATIONS === -->
+<script>
+STATIONS.push(
+{
+  id:'memory',
+  icon:'🧠',
+  name:'Memory Impairment',
+  sub:'Short-term recall difficulty',
+  desc:'Instructions disappear, forcing recall.',
+  simClass:'',
+  vrClass:'vr-memory',
+  simLabel:'Instructions disappear',
+  insight:'Keep instructions persistent.',
+  demo:()=>`
+    <div>
+      <div id="memory-instructions" style="padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:10px">
+        Remember this code: <strong>8392</strong>
+      </div>
+      <input type="text" placeholder="Enter the code..." />
+    </div>`
+},
+{
+  id:'tunnel',
+  icon:'👁️',
+  name:'Tunnel Vision',
+  sub:'Peripheral loss',
+  desc:'Only central vision available.',
+  simClass:'',
+  vrClass:'vr-tunnel',
+  simLabel:'Restricted field',
+  insight:'Avoid edge-only UI.',
+  demo:()=>`<p>Toggle simulation.</p>`
+},
+{
+  id:'adhd',
+  icon:'⚡',
+  name:'Attention Loss',
+  sub:'Focus disruption',
+  desc:'Focus constantly interrupted.',
+  simClass:'',
+  vrClass:'vr-adhd',
+  simLabel:'Focus disruption',
+  insight:'Avoid focus stealing.',
+  demo:()=>`<input type="text" placeholder="Try typing..." />`
+}
+);
+
+let adhdInterval = null;
+let vrADHDInterval = null;
+
+const oldRender = renderStation;
+renderStation = function(idx){
+  oldRender(idx);
+
+  const s = STATIONS[idx];
+  const chk = document.getElementById('sim-chk');
+
+  clearInterval(adhdInterval);
+  document.getElementById('tunnel-overlay').classList.remove('on');
+
+  if(!chk) return;
+
+  chk.addEventListener('change', e=>{
+    const enabled = e.target.checked;
+
+    if(s.id === 'memory'){
+      const el = document.getElementById('memory-instructions');
+      if(enabled){
+        setTimeout(()=> el && (el.style.display='none'), 3000);
+      } else if(el){
+        el.style.display='block';
+      }
+    }
+
+    if(s.id === 'tunnel'){
+      document.getElementById('tunnel-overlay')
+        .classList.toggle('on', enabled);
+    }
+
+    if(s.id === 'adhd'){
+      if(enabled){
+        adhdInterval = setInterval(()=>{
+          const els = document.querySelectorAll('input,button');
+          if(!els.length) return;
+          els[Math.floor(Math.random()*els.length)].focus();
+        }, 2500);
+      } else {
+        clearInterval(adhdInterval);
+      }
+    }
+  });
+};
+
+VR_SIM_MAP['memory'] = 'vr-memory';
+VR_SIM_MAP['tunnel'] = 'vr-tunnel';
+VR_SIM_MAP['adhd'] = 'vr-adhd';
+
+const oldApply = applyVRSim;
+applyVRSim = function(simId){
+  oldApply(simId);
+
+  clearInterval(vrADHDInterval);
+
+  if(simId === 'adhd'){
+    vrADHDInterval = setInterval(()=>{
+      const cam = document.getElementById('vr-camera');
+      if(!cam) return;
+      const x = (Math.random()-0.5)*0.1;
+      const y = (Math.random()-0.5)*0.1;
+      cam.object3D.rotation.x += x;
+      cam.object3D.rotation.y += y;
+    }, 500);
+  }
+};
+</script>
+
+<style>
+body.vr-tunnel::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:radial-gradient(circle at center,
+    transparent 20%, rgba(0,0,0,0.9) 70%);
+  pointer-events:none;
+  z-index:999;
+}
+
+body.vr-adhd #scene-wrap canvas {
+  animation: vrShake 0.2s infinite;
+}
+@keyframes vrShake {
+  0%{transform:translate(0,0)}
+  50%{transform:translate(2px,-2px)}
+  100%{transform:translate(0,0)}
+}
+</style>
+
+</body>
+</html>
