@@ -2,52 +2,90 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>VR Accessibility Challenge Simulations</title>
+<title>VR Accessibility Challenges – Quest Optimized (VR-Only)</title>
 
-<!-- A‑Frame + WebXR controller utilities -->
+<!-- A‑Frame Core -->
 <script src="[aframe.io](https://aframe.io/releases/1.5.0/aframe.min.js)"></script>
 <script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js)"></script>
 
-<style>
-body { font-family: sans-serif; margin: 0; background: #fafafa; }
+<!-- Hand Tracking (Pinch Click Component) -->
+<script>
+AFRAME.registerComponent('pinch-click', {
+  init() {
+    this.el.addEventListener('pinchstarted', () => {
+      this.el.emit('click');
+    });
+  }
+});
+</script>
 
-.tabs { display: flex; background: #222; }
+<style>
+body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
+
+/* VR-only tabs */
+.tabs { display:flex; background:#222; }
 .tabs button {
   flex:1; padding:12px; border:none; background:#333; color:#fff; cursor:pointer;
 }
 .tabs button.active { background:#555; }
 
+/* Scene containers */
 .scene-container { display:none; height:92vh; overflow:hidden; }
 .scene-container.active { display:block; }
 
 .info {
-  padding:12px; background:#e8e8e8; font-size:0.9rem; line-height:1.4rem;
-  border-bottom:2px solid #ccc;
+  padding:12px; background:#e8e8e8; border-bottom:2px solid #ccc;
+  font-size:0.9rem; line-height:1.4rem;
 }
-.warning { background:#fdd; border-bottom:2px solid #d00; font-weight:bold; text-align:center; }
+.warning {
+  padding:10px; background:#fdd; border-bottom:2px solid #d00;
+  font-weight:bold; text-align:center;
+}
+
+/* Landing screen */
+#nonVRMessage {
+  padding:40px;
+  text-align:center;
+  font-size:1.5rem;
+  line-height:2.2rem;
+  background:#111;
+  color:white;
+}
 </style>
 </head>
 
 <body>
 
-<div class="tabs">
+<!-- ==========================================================
+     VR-ONLY LANDING SCREEN
+=========================================================== -->
+<div id="nonVRMessage">
+  This experience is designed for VR.<br><br>
+  Please open this page inside your Meta Quest headset<br>
+  and press <strong>“Enter VR”</strong> to begin the simulation.
+</div>
+
+<!-- ==========================================================
+     VR TABS (Initially Hidden Until VR Mode Becomes Active)
+=========================================================== -->
+<div class="tabs" style="display:none;">
   <button data-target="cb">Color Blindness</button>
-  <button data-target="switch">Single-Switch</button>
+  <button data-target="switch">Single‑Switch</button>
   <button data-target="fatigue">Motor Fatigue</button>
   <button data-target="overload">Sensory Overload</button>
   <button data-target="memory">Memory Challenge</button>
 </div>
 
-<!-- ==========================================
-  1. COLOR BLINDNESS
-=========================================== -->
+
+<!-- ==========================================================
+     1. COLOR BLINDNESS SIMULATION
+=========================================================== -->
 <div id="cb" class="scene-container active">
   <div class="info">
-    <strong>WCAG Relevance:</strong>  
-    • WCAG 1.4.1 Use of Color – information should not rely on color alone.  
-    • WCAG 1.4.3 Contrast – ensure readable contrast for low‑vision users.  
-    <br><br>
-    This scene simulates protanopia, deuteranopia, and tritanopia.
+    <strong>WCAG Relevance:</strong><br>
+    • WCAG 1.4.1 Use of Color<br>
+    • WCAG 1.4.3 Contrast<br><br>
+    Select filters simulating common types of color blindness.
   </div>
 
   <div style="padding:10px;">
@@ -60,151 +98,224 @@ body { font-family: sans-serif; margin: 0; background: #fafafa; }
     </select>
   </div>
 
-  <a-scene id="sceneCB" renderer="antialias:true" xr-mode-ui="enabled:true">
+  <a-scene
+    id="sceneCB"
+    renderer="antialias:true; foveationLevel:1;"
+    xr-mode-ui="enabled:true"
+    webxr="optionalFeatures: local-floor, bounded-floor, hand-tracking;"
+    style="display:none;">
+
     <a-entity environment="preset: forest"></a-entity>
 
-    <a-entity id="cbWorld" position="0 1.4 -3" shadow="cast:true">
-      <a-box color="#FF0000" position="-1 0 0" depth="1" height="1" width="1"></a-box>
-      <a-box color="#00FF00" position="0 0 0" depth="1" height="1" width="1"></a-box>
-      <a-box color="#0000FF" position="1 0 0" depth="1" height="1" width="1"></a-box>
+    <a-entity id="cbWorld" position="0 1.4 -3">
+      <a-box color="#FF0000" position="-1 0 0"></a-box>
+      <a-box color="#00FF00" position="0 0 0"></a-box>
+      <a-box color="#0000FF" position="1 0 0"></a-box>
     </a-entity>
 
-    <a-entity light="type: directional; intensity: 1" position="1 3 2"></a-entity>
-    <a-sky color="#EEE"></a-sky>
+    <a-entity light="type:directional; intensity:0.8" position="2 3 1"></a-entity>
 
-    <a-entity laser-controls="hand: left"></a-entity>
-    <a-entity laser-controls="hand: right"></a-entity>
+    <!-- Quest Controllers + Hands -->
+    <a-entity oculus-touch-controls="hand:left"></a-entity>
+    <a-entity oculus-touch-controls="hand:right"></a-entity>
+    <a-entity hand-tracking-controls="hand:left"></a-entity>
+    <a-entity hand-tracking-controls="hand:right"></a-entity>
   </a-scene>
 </div>
 
-<!-- ==========================================
-  2. SINGLE-SWITCH NAVIGATION
-=========================================== -->
+
+<!-- ==========================================================
+     2. SINGLE SWITCH NAVIGATION
+=========================================================== -->
 <div id="switch" class="scene-container">
   <div class="info">
-    <strong>WCAG Relevance:</strong>  
-    • WCAG 2.1 Keyboard Accessible – all functionality must be operable via keyboard.  
-    • WCAG 2.5.2 Pointer Cancellation – avoid accidental activation.  
-    <br><br>
-    Cycle focus using SPACE. Confirm with ENTER.
+    <strong>WCAG Relevance:</strong><br>
+    • WCAG 2.1 Keyboard Accessible<br>
+    • WCAG 2.5.2 Pointer Cancellation<br><br>
+    SPACE cycles focus. ENTER activates. Controller and hand also work.
   </div>
 
-  <a-scene id="sceneSwitch" renderer="antialias:true" xr-mode-ui="enabled:true">
+  <a-scene
+    id="sceneSwitch"
+    renderer="antialias:true; foveationLevel:1;"
+    xr-mode-ui="enabled:true"
+    webxr="optionalFeatures: local-floor, hand-tracking;"
+    style="display:none;">
+
     <a-entity environment="preset: yavapai"></a-entity>
 
     <a-entity id="switchMenu" position="0 1.6 -2">
-      <a-plane class="menuItem" width="1.5" height="0.4" position="0 1 0"
-               text="value:Option A; align:center;" color="#555"></a-plane>
-      <a-plane class="menuItem" width="1.5" height="0.4" position="0 0.4 0"
-               text="value:Option B; align:center;" color="#555"></a-plane>
-      <a-plane class="menuItem" width="1.5" height="0.4" position="0 -0.2 0"
-               text="value:Option C; align:center;" color="#555"></a-plane>
+      <a-plane class="menuItem" width="1.6" height="0.45" position="0 1 0"
+        text="value:Option A; align:center;" color="#555" pinch-click></a-plane>
+      <a-plane class="menuItem" width="1.6" height="0.45" position="0 0.4 0"
+        text="value:Option B; align:center;" color="#555" pinch-click></a-plane>
+      <a-plane class="menuItem" width="1.6" height="0.45" position="0 -0.2 0"
+        text="value:Option C; align:center;" color="#555" pinch-click></a-plane>
     </a-entity>
 
-    <a-sky color="#EEE"></a-sky>
-    <a-entity laser-controls="hand: right"></a-entity>
+    <a-entity oculus-touch-controls="hand:right"></a-entity>
+    <a-entity hand-tracking-controls="hand:right"></a-entity>
   </a-scene>
 </div>
 
-<!-- ==========================================
-  3. MOTOR FATIGUE
-=========================================== -->
+
+<!-- ==========================================================
+     3. MOTOR FATIGUE SIMULATION
+=========================================================== -->
 <div id="fatigue" class="scene-container">
   <div class="info">
-    <strong>WCAG Relevance:</strong>  
-    • WCAG 2.1.1 Keyboard – alternative input needed.  
-    • WCAG 2.5.1 Pointer Gestures – avoid complex gestures.  
-    <br><br>
-    Clicking gets harder as delay increases (simulated fatigue).
+    <strong>WCAG Relevance:</strong><br>
+    • WCAG 2.1 Keyboard<br>
+    • WCAG 2.5.1 Pointer Gestures<br><br>
+    Each click becomes harder due to delayed reaction (simulated fatigue).
   </div>
 
-  <a-scene id="sceneFatigue" renderer="antialias:true" xr-mode-ui="enabled:true">
+  <a-scene
+    id="sceneFatigue"
+    renderer="antialias:true; foveationLevel:1;"
+    xr-mode-ui="enabled:true"
+    webxr="optionalFeatures: local-floor, hand-tracking;"
+    style="display:none;">
+
     <a-entity environment="preset: goldmine"></a-entity>
 
     <a-sphere id="fatigueSphere" color="#FF8800" radius="0.5"
-              position="0 1.6 -2" shadow="cast:true"></a-sphere>
+              position="0 1.6 -2" pinch-click></a-sphere>
+
     <a-entity id="fatigueText" position="0 2.3 -2"
               text="value:Clicks: 0; align:center;"></a-entity>
 
-    <a-entity laser-controls="hand: right"></a-entity>
+    <a-entity oculus-touch-controls="hand:right"></a-entity>
+    <a-entity hand-tracking-controls="hand:right"></a-entity>
+
   </a-scene>
 </div>
 
-<!-- ==========================================
-  4. SENSORY OVERLOAD
-=========================================== -->
+
+<!-- ==========================================================
+     4. SENSORY OVERLOAD
+=========================================================== -->
 <div id="overload" class="scene-container">
   <div class="warning">
-    WARNING: Flashing lights & chaotic visuals. Press ESC or select EXIT.
+    WARNING: Flashing lights. Press ESC or tap EXIT.
   </div>
 
   <div class="info">
-    <strong>WCAG Relevance:</strong>  
-    • WCAG 2.3.1 Seizures – no flashing more than 3 times per second.  
-    • WCAG 1.3.2 Meaningful Sequence – avoid chaotic layouts.  
-    <br><br>
-    This scene intentionally violates WCAG for demonstration.
+    <strong>WCAG Relevance:</strong><br>
+    • WCAG 2.3.1 Seizures<br>
+    • WCAG 1.3.2 Meaningful Sequence<br><br>
+    This intentionally violates WCAG for demonstration. Includes Exit.
   </div>
 
-  <a-scene id="sceneOverload" renderer="antialias:true" xr-mode-ui="enabled:true">
+  <a-scene
+    id="sceneOverload"
+    renderer="antialias:true; foveationLevel:1;"
+    xr-mode-ui="enabled:true"
+    webxr="optionalFeatures: local-floor, hand-tracking;"
+    style="display:none;">
+
     <a-entity environment="preset: tron"></a-entity>
 
     <a-box id="o1" position="-1 1.6 -3"></a-box>
     <a-box id="o2" position="1 1.6 -3"></a-box>
     <a-sphere id="o3" position="0 1.6 -2" radius="0.7"></a-sphere>
 
-    <a-plane id="exitOverload" position="0 0.5 -2" width="2" height="0.5"
-             color="#000" text="value:EXIT; align:center; color:#FFF;"></a-plane>
+    <a-plane id="exitOverload"
+             width="2" height="0.6"
+             color="#000"
+             text="value:EXIT; align:center; color:#FFF;"
+             position="0 0.5 -2"
+             pinch-click></a-plane>
 
-    <a-entity laser-controls="hand: right"></a-entity>
+    <a-entity oculus-touch-controls="hand:right"></a-entity>
+    <a-entity hand-tracking-controls="hand:right"></a-entity>
+
   </a-scene>
 </div>
 
-<!-- ==========================================
-  5. MEMORY CHALLENGE
-=========================================== -->
+
+<!-- ==========================================================
+     5. MEMORY CHALLENGE
+=========================================================== -->
 <div id="memory" class="scene-container">
   <div class="info">
-    <strong>WCAG Relevance:</strong>  
-    • WCAG 3.2.3 Consistent Navigation – users should not memorize structure.  
-    • WCAG 3.3.2 Labels or Instructions – hiding labels increases cognitive load.  
-    <br><br>
-    Choose the right block; no labels or breadcrumbs provided.
+    <strong>WCAG Relevance:</strong><br>
+    • WCAG 3.2.3 Consistent Navigation<br>
+    • WCAG 3.3.2 Labels or Instructions<br><br>
+    No breadcrumbs or labels. Choose the correct box by memory.
   </div>
 
-  <a-scene id="sceneMemory" renderer="antialias:true" xr-mode-ui="enabled:true">
+  <a-scene
+    id="sceneMemory"
+    renderer="antialias:true; foveationLevel:1;"
+    xr-mode-ui="enabled:true"
+    webxr="optionalFeatures: local-floor, hand-tracking;"
+    style="display:none;">
+
     <a-entity environment="preset: egypt"></a-entity>
 
     <a-entity id="maze" position="0 1.4 -3">
-      <a-box color="#888" position="-1 0 0"></a-box>
-      <a-box color="#888" position="1 0 0"></a-box>
-      <a-box color="#888" position="0 0 -1"></a-box>
-      <a-box color="#888" position="0 0 1"></a-box>
+      <a-box position="-1 0 0" color="#777" pinch-click></a-box>
+      <a-box position="1 0 0" color="#777" pinch-click></a-box>
+      <a-box position="0 0 -1" color="#777" pinch-click></a-box>
+      <a-box position="0 0 1" color="#777" pinch-click></a-box>
     </a-entity>
 
     <a-entity id="feedback" position="0 2.3 -3"
               text="value:Choose carefully; align:center;"></a-entity>
 
-    <a-entity laser-controls="hand: right"></a-entity>
+    <a-entity oculus-touch-controls="hand:right"></a-entity>
+    <a-entity hand-tracking-controls="hand:right"></a-entity>
+
   </a-scene>
 </div>
 
+
+<!-- ==========================================================
+     JS LOGIC (TABS + VR‑ONLY VISIBILITY + INTERACTIONS)
+=========================================================== -->
 <script>
-/* TAB SWITCHING */
+
+/* --- VR‑Only Visibility --- */
+const nonVRMessage = document.getElementById("nonVRMessage");
+const tabBar = document.querySelector(".tabs");
+const scenes = document.querySelectorAll("a-scene");
+
+/* Hide scenes until VR starts */
+scenes.forEach(scene => scene.style.display = "none");
+
+scenes.forEach(scene => {
+  scene.addEventListener("enter-vr", () => {
+    nonVRMessage.style.display = "none";
+    tabBar.style.display = "flex";
+    scenes.forEach(s => s.style.display = "block");
+  });
+
+  scene.addEventListener("exit-vr", () => {
+    nonVRMessage.style.display = "block";
+    tabBar.style.display = "none";
+    scenes.forEach(s => s.style.display = "none");
+  });
+});
+
+
+/* --- Tabs --- */
 const tabButtons = document.querySelectorAll(".tabs button");
-const scenes = document.querySelectorAll(".scene-container");
+const sceneContainers = document.querySelectorAll(".scene-container");
+
 tabButtons.forEach(btn => {
   btn.onclick = () => {
     tabButtons.forEach(b => b.classList.remove("active"));
+    sceneContainers.forEach(s => s.classList.remove("active"));
     btn.classList.add("active");
-    scenes.forEach(s => s.classList.remove("active"));
     document.getElementById(btn.dataset.target).classList.add("active");
   };
 });
 
-/* 1. COLOR BLINDNESS */
+
+/* --- 1. Color Blindness --- */
 const cbSelect = document.getElementById("cbSelect");
-const colorMatrices = {
+const filters = {
   none: "none",
   protanopia: "protanopia(1)",
   deuteranopia: "deuteranopia(1)",
@@ -212,18 +323,21 @@ const colorMatrices = {
 };
 cbSelect.onchange = () => {
   document.getElementById("sceneCB").style.filter =
-    colorMatrices[cbSelect.value];
+    filters[cbSelect.value];
 };
 
-/* 2. SINGLE-SWITCH */
+
+/* --- 2. Single Switch Navigation --- */
 let switchIndex = 0;
 const items = document.querySelectorAll("#switchMenu .menuItem");
-function highlight(idx) {
-  items.forEach(i => i.setAttribute("color", "#555"));
-  items[idx].setAttribute("color", "#00AEEF");
+
+function highlight(i) {
+  items.forEach(x => x.setAttribute("color", "#555"));
+  items[i].setAttribute("color", "#00AEEF");
 }
 highlight(0);
-document.addEventListener("keydown", e => {
+
+document.addEventListener("keydown", (e) => {
   if (!document.getElementById("switch").classList.contains("active")) return;
   if (e.code === "Space") {
     switchIndex = (switchIndex + 1) % items.length;
@@ -234,41 +348,56 @@ document.addEventListener("keydown", e => {
   }
 });
 
-/* 3. FATIGUE */
+items.forEach((item, index) => {
+  item.addEventListener("click", () => {
+    switchIndex = index;
+    highlight(index);
+    item.setAttribute("color", "#0F0");
+  });
+});
+
+
+/* --- 3. Motor Fatigue --- */
 let clicks = 0;
-let delay = 100;
-const fatigueSphere = document.getElementById("fatigueSphere");
-const fatigueText = document.getElementById("fatigueText");
-fatigueSphere.addEventListener("click", () => {
+let delay = 120;
+document.getElementById("fatigueSphere").addEventListener("click", () => {
   setTimeout(() => {
     clicks++;
-    delay += 80;
-    fatigueText.setAttribute("text", "value:Clicks: " + clicks);
+    delay += 90;
+    document.getElementById("fatigueText")
+      .setAttribute("text", "value:Clicks: " + clicks);
   }, delay);
 });
 
-/* 4. SENSORY OVERLOAD */
-const flashingIDs = ["o1", "o2", "o3"];
+
+/* --- 4. Sensory Overload --- */
+const flashingIDs = ["o1","o2","o3"];
 setInterval(() => {
   if (!document.getElementById("overload").classList.contains("active")) return;
   flashingIDs.forEach(id => {
     const el = document.getElementById(id);
     el.setAttribute("color", "#" + Math.floor(Math.random()*16777215).toString(16));
     el.object3D.rotation.y += 0.25;
+    el.object3D.rotation.x += 0.15;
   });
-}, 100);
+}, 90);
+
 document.getElementById("exitOverload").addEventListener("click", () => {
   document.querySelector("[data-target='cb']").click();
 });
 
-/* 5. MEMORY */
+
+/* --- 5. Memory Challenge --- */
 document.querySelectorAll("#maze a-box").forEach(box => {
   box.addEventListener("click", () => {
     const correct = Math.random() > 0.5;
-    const fb = document.getElementById("feedback");
-    fb.setAttribute("text","value:"+(correct?"Correct!":"Wrong path"));
+    document.getElementById("feedback").setAttribute(
+      "text",
+      "value:" + (correct ? "Correct!" : "Wrong path")
+    );
   });
 });
+
 </script>
 
 </body>
