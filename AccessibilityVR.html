@@ -4,11 +4,13 @@
 <meta charset="UTF-8" />
 <title>VR Accessibility Challenges – Quest Auto-VR</title>
 
-<!-- Load A‑Frame FIRST -->
-<script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/aframe/1.5.0/aframe.min.js)"></script>
-<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js)"></script>
+<!-- A‑Frame from UNPKG (rock solid CDN) -->
+<script src="[unpkg.com](https://unpkg.com/aframe@1.5.0/dist/aframe.min.js)"></script>
 
-<!-- Hand Tracking Pinch Component (runs AFTER A‑Frame loads) -->
+<!-- Environment component from UNPKG -->
+<script src="[unpkg.com](https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js)"></script>
+
+<!-- Hand Tracking Pinch Component -->
 <script>
 AFRAME.registerComponent('pinch-click', {
   init() {
@@ -34,10 +36,15 @@ body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
 .tabs {
   display:none;
   background:#222;
+  color:white;
 }
 .tabs button {
-  flex:1; padding:12px;
-  border:none; background:#333; color:#fff; cursor:pointer;
+  flex:1;
+  padding:12px;
+  background:#333;
+  border:none;
+  color:white;
+  cursor:pointer;
 }
 .tabs button.active { background:#555; }
 
@@ -54,7 +61,6 @@ body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
   background:#e8e8e8;
   border-bottom:2px solid #ccc;
   font-size:0.9rem;
-  line-height:1.4rem;
 }
 
 .warning {
@@ -67,34 +73,38 @@ body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
 </style>
 </head>
 
+
+
+
 <body>
 
-<!-- ==============================
-     VR-Only Landing Screen
-============================== -->
+<!-- VR-ONLY LANDING SCREEN -->
 <div id="nonVRMessage">
   This experience is designed for VR.<br><br>
-  Please open this page inside your Meta Quest headset<br>
-  and wait — the experience will automatically enter VR.
+  Please open this page inside your Meta Quest headset.<br>
+  It will automatically enter VR mode.
 </div>
 
-<!-- TABS (Initially hidden) -->
+<!-- Tabs (hidden until VR mode) -->
 <div class="tabs">
-  <button data-target="cb">Color Blindness</button>
-  <button data-target="switch">Single‑Switch</button>
+  <button data-target="cb" class="active">Color Blindness</button>
+  <button data-target="switch">Single-Switch</button>
   <button data-target="fatigue">Motor Fatigue</button>
   <button data-target="overload">Sensory Overload</button>
   <button data-target="memory">Memory Challenge</button>
 </div>
 
 
+
+
 <!-- ========================================================
      1. COLOR BLINDNESS
 ========================================================= -->
 <div id="cb" class="scene-container active">
+
   <div class="info">
-    <strong>WCAG Relevance:</strong><br>
-    • WCAG 1.4.1 Use of Color • WCAG 1.4.3 Contrast<br><br>
+    <strong>WCAG Relevance:</strong>
+    WCAG 1.4.1 Color Use, WCAG 1.4.3 Contrast<br><br>
     Simulated color-blindness filters.
   </div>
 
@@ -108,12 +118,11 @@ body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
     </select>
   </div>
 
-  <a-scene
-    id="sceneCB"
-    renderer="antialias:true; foveationLevel:1;"
-    xr-mode-ui="enabled:true"
-    webxr="optionalFeatures: local-floor, hand-tracking;"
-    style="visibility:hidden;">
+  <a-scene id="sceneCB"
+           renderer="antialias:true; foveationLevel:1;"
+           xr-mode-ui="enabled:true"
+           webxr="optionalFeatures: local-floor, hand-tracking;"
+           style="visibility:hidden;">
 
     <a-entity environment="preset: forest"></a-entity>
 
@@ -127,41 +136,42 @@ body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
     <a-entity oculus-touch-controls="hand:right"></a-entity>
     <a-entity hand-tracking-controls="hand:left"></a-entity>
     <a-entity hand-tracking-controls="hand:right"></a-entity>
+
   </a-scene>
 </div>
 
 
+
+
 <!-- ========================================================
-     2. SINGLE SWITCH NAVIGATION
+     2. SINGLE-SWITCH NAVIGATION
 ========================================================= -->
 <div id="switch" class="scene-container">
   <div class="info">
-    <strong>WCAG Relevance:</strong><br>
-    • Keyboard accessible controls<br><br>
-    SPACE cycles options, ENTER selects.
+    Accessible navigation using single input.
   </div>
 
-  <a-scene
-    id="sceneSwitch"
-    renderer="antialias:true; foveationLevel:1;"
-    webxr="optionalFeatures: local-floor, hand-tracking;"
-    xr-mode-ui="enabled:true"
-    style="visibility:hidden;">
+  <a-scene id="sceneSwitch"
+           renderer="antialias:true; foveationLevel:1;"
+           webxr="optionalFeatures: local-floor, hand-tracking;"
+           xr-mode-ui="enabled:true"
+           style="visibility:hidden;">
 
     <a-entity environment="preset: yavapai"></a-entity>
 
     <a-entity id="switchMenu" position="0 1.6 -2">
       <a-plane class="menuItem" width="1.6" height="0.45" position="0 1 0"
-        text="value:Option A; align:center;" color="#555" pinch-click></a-plane>
-
+               text="value:Option A; align:center;" color="#555"></a-plane>
       <a-plane class="menuItem" width="1.6" height="0.45" position="0 0.4 0"
-        text="value:Option B; align:center;" color="#555" pinch-click></a-plane>
-
+               text="value:Option B; align:center;" color="#555"></a-plane>
       <a-plane class="menuItem" width="1.6" height="0.45" position="0 -0.2 0"
-        text="value:Option C; align:center;" color:"#555" pinch-click></a-plane>
+               text="value:Option C; align:center;" color="#555"></a-plane>
     </a-entity>
+
   </a-scene>
 </div>
+
+
 
 
 <!-- ========================================================
@@ -169,43 +179,42 @@ body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
 ========================================================= -->
 <div id="fatigue" class="scene-container">
   <div class="info">
-    <strong>WCAG Relevance:</strong><br>
-    • Avoid requiring rapid, repeated input.
+    Simulated motor fatigue: delayed click response.
   </div>
 
-  <a-scene
-    id="sceneFatigue"
-    renderer="antialias:true; foveationLevel:1;"
-    webxr="optionalFeatures: local-floor, hand-tracking;"
-    xr-mode-ui="enabled:true"
-    style="visibility:hidden;">
+  <a-scene id="sceneFatigue"
+           renderer="antialias:true; foveationLevel:1;"
+           webxr="optionalFeatures: local-floor, hand-tracking;"
+           xr-mode-ui="enabled:true"
+           style="visibility:hidden;">
 
     <a-entity environment="preset: goldmine"></a-entity>
 
     <a-sphere id="fatigueSphere" radius="0.5" color="#f80"
-              position="0 1.6 -2" pinch-click></a-sphere>
+              position="0 1.6 -2"></a-sphere>
 
-    <a-entity id="fatigueText" position="0 2.3 -2"
+    <a-entity id="fatigueText"
+              position="0 2.3 -2"
               text="value:Clicks: 0; align:center;"></a-entity>
+
   </a-scene>
 </div>
+
+
 
 
 <!-- ========================================================
      4. SENSORY OVERLOAD
 ========================================================= -->
 <div id="overload" class="scene-container">
-  <div class="warning">WARNING: Flashing lights.</div>
-  <div class="info">
-    Intentional WCAG violation for demonstration.
-  </div>
 
-  <a-scene
-    id="sceneOverload"
-    renderer="antialias:true; foveationLevel:1;"
-    webxr="optionalFeatures: local-floor, hand-tracking;"
-    xr-mode-ui="enabled:true"
-    style="visibility:hidden;">
+  <div class="warning">WARNING: Flashing lights</div>
+
+  <a-scene id="sceneOverload"
+           renderer="antialias:true; foveationLevel:1;"
+           webxr="optionalFeatures: local-floor, hand-tracking;"
+           xr-mode-ui="enabled:true"
+           style="visibility:hidden;">
 
     <a-entity environment="preset: tron"></a-entity>
 
@@ -214,59 +223,61 @@ body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
     <a-sphere id="o3" radius="0.7" position="0 1.6 -2"></a-sphere>
 
     <a-plane id="exitOverload" position="0 0.5 -2"
-             width="2" height="0.6"
-             color="#000" text="value:EXIT; align:center; color:#FFF;"
-             pinch-click></a-plane>
+             width="2" height="0.6" color="#000"
+             text="value:EXIT; align:center; color:#FFF;"></a-plane>
+
   </a-scene>
 </div>
+
+
 
 
 <!-- ========================================================
      5. MEMORY CHALLENGE
 ========================================================= -->
 <div id="memory" class="scene-container">
-  <div class="info">
-    Simulates inconsistent navigation and removed clues.
-  </div>
 
-  <a-scene
-    id="sceneMemory"
-    renderer="antialias:true; foveationLevel:1;"
-    webxr="optionalFeatures: local-floor, hand-tracking;"
-    xr-mode-ui="enabled:true"
-    style="visibility:hidden;">
+  <div class="info">Choose the correct block by memory.</div>
+
+  <a-scene id="sceneMemory"
+           renderer="antialias:true; foveationLevel:1;"
+           webxr="optionalFeatures: local-floor, hand-tracking;"
+           xr-mode-ui="enabled:true"
+           style="visibility:hidden;">
 
     <a-entity environment="preset: egypt"></a-entity>
 
     <a-entity id="maze" position="0 1.4 -3">
-      <a-box position="-1 0 0" color="#777" pinch-click></a-box>
-      <a-box position="1 0 0" color="#777" pinch-click></a-box>
-      <a-box position="0 0 -1" color="#777" pinch-click></a-box>
-      <a-box position="0 0 1" color="#777" pinch-click></a-box>
+      <a-box position="-1 0 0" color="#777"></a-box>
+      <a-box position="1 0 0" color="#777"></a-box>
+      <a-box position="0 0 -1" color="#777"></a-box>
+      <a-box position="0 0 1" color="#777"></a-box>
     </a-entity>
 
-    <a-entity id="feedback" position="0 2.3 -3"
+    <a-entity id="feedback"
+              position="0 2.3 -3"
               text="value:Choose carefully; align:center;"></a-entity>
+
   </a-scene>
 </div>
 
 
+
+
 <!-- ========================================================
-     SCRIPT: VR-only visibility + auto-enter-VR + interactions
+     JAVASCRIPT LOGIC
 ========================================================= -->
 <script>
-/* ================================
-   1. VR-only visibility controller
-================================ */
 
+/* -------------------------------
+   1. VR-only mode
+-------------------------------- */
 const nonVRMessage = document.getElementById("nonVRMessage");
 const tabBar = document.querySelector(".tabs");
 const scenes = document.querySelectorAll("a-scene");
 
-/* Scenes invisible until VR begins */
 scenes.forEach(s => s.style.visibility = "hidden");
 
-/* When VR is entered */
 scenes.forEach(scene => {
   scene.addEventListener("enter-vr", () => {
     nonVRMessage.style.display = "none";
@@ -282,27 +293,24 @@ scenes.forEach(scene => {
 });
 
 
-/* ================================
-   2. AUTO ENTER VR ON QUEST
-================================ */
-
+/* -------------------------------
+   2. Auto-Enter VR on Quest
+-------------------------------- */
 const isQuest = navigator.userAgent.includes("OculusBrowser");
 
 if (isQuest) {
   window.addEventListener("load", () => {
     setTimeout(() => {
       const scene = document.querySelector("a-scene");
-      if (scene && scene.enterVR) {
-        scene.enterVR();
-      }
+      if (scene && scene.enterVR) scene.enterVR();
     }, 1500);
   });
 }
 
 
-/* ================================
+/* -------------------------------
    3. Tabs
-================================ */
+-------------------------------- */
 const tabButtons = document.querySelectorAll(".tabs button");
 const containers = document.querySelectorAll(".scene-container");
 
@@ -316,9 +324,9 @@ tabButtons.forEach(btn => {
 });
 
 
-/* ================================
+/* -------------------------------
    4. Color Blindness Filters
-================================ */
+-------------------------------- */
 const cbSelect = document.getElementById("cbSelect");
 const filters = {
   none: "none",
@@ -328,14 +336,13 @@ const filters = {
 };
 
 cbSelect.onchange = () => {
-  document.getElementById("sceneCB").style.filter =
-    filters[cbSelect.value];
+  document.getElementById("sceneCB").style.filter = filters[cbSelect.value];
 };
 
 
-/* ================================
-   5. Single Switch Logic
-================================ */
+/* -------------------------------
+   5. Single Switch Navigation
+-------------------------------- */
 let switchIndex = 0;
 const items = document.querySelectorAll("#switchMenu .menuItem");
 
@@ -343,7 +350,6 @@ function highlight(i) {
   items.forEach(x => x.setAttribute("color", "#555"));
   items[i].setAttribute("color", "#00AEEF");
 }
-
 highlight(0);
 
 document.addEventListener("keydown", e => {
@@ -357,18 +363,10 @@ document.addEventListener("keydown", e => {
   }
 });
 
-items.forEach((item, index) => {
-  item.addEventListener("click", () => {
-    switchIndex = index;
-    highlight(index);
-    item.setAttribute("color", "#0F0");
-  });
-});
 
-
-/* ================================
+/* -------------------------------
    6. Motor Fatigue
-================================ */
+-------------------------------- */
 let clicks = 0;
 let delay = 120;
 
@@ -382,11 +380,10 @@ document.getElementById("fatigueSphere").addEventListener("click", () => {
 });
 
 
-/* ================================
+/* -------------------------------
    7. Sensory Overload
-================================ */
+-------------------------------- */
 const flashingIDs = ["o1","o2","o3"];
-
 setInterval(() => {
   if (!document.getElementById("overload").classList.contains("active")) return;
   flashingIDs.forEach(id => {
@@ -402,16 +399,17 @@ document.getElementById("exitOverload").addEventListener("click", () => {
 });
 
 
-/* ================================
+/* -------------------------------
    8. Memory Challenge
-================================ */
+-------------------------------- */
 document.querySelectorAll("#maze a-box").forEach(box => {
   box.addEventListener("click", () => {
     const correct = Math.random() > 0.5;
     document.getElementById("feedback")
-      .setAttribute("text", "value:" + (correct ? "Correct!" : "Wrong path"));
+      .setAttribute("text", "value:" + (correct ? "Correct!" : "Wrong"));
   });
 });
+
 </script>
 
 </body>
