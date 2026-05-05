@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>VR Accessibility Challenge Simulations</title>
+
+<!-- A‑Frame + WebXR controller utilities -->
+<script src="[aframe.io](https://aframe.io/releases/1.5.0/aframe.min.js)"></script>
+<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js)"></script>
+
+<style>
+body { font-family: sans-serif; margin: 0; background: #fafafa; }
+
+.tabs { display: flex; background: #222; }
+.tabs button {
+  flex:1; padding:12px; border:none; background:#333; color:#fff; cursor:pointer;
+}
+.tabs button.active { background:#555; }
+
+.scene-container { display:none; height:92vh; overflow:hidden; }
+.scene-container.active { display:block; }
+
+.info {
+  padding:12px; background:#e8e8e8; font-size:0.9rem; line-height:1.4rem;
+  border-bottom:2px solid #ccc;
+}
+.warning { background:#fdd; border-bottom:2px solid #d00; font-weight:bold; text-align:center; }
+</style>
+</head>
+
+<body>
+
+<div class="tabs">
+  <button data-target="cb">Color Blindness</button>
+  <button data-target="switch">Single-Switch</button>
+  <button data-target="fatigue">Motor Fatigue</button>
+  <button data-target="overload">Sensory Overload</button>
+  <button data-target="memory">Memory Challenge</button>
+</div>
+
+<!-- ==========================================
+  1. COLOR BLINDNESS
+=========================================== -->
+<div id="cb" class="scene-container active">
+  <div class="info">
+    <strong>WCAG Relevance:</strong>  
+    • WCAG 1.4.1 Use of Color – information should not rely on color alone.  
+    • WCAG 1.4.3 Contrast – ensure readable contrast for low‑vision users.  
+    <br><br>
+    This scene simulates protanopia, deuteranopia, and tritanopia.
+  </div>
+
+  <div style="padding:10px;">
+    <label>Color filter: </label>
+    <select id="cbSelect">
+      <option value="none">None</option>
+      <option value="protanopia">Protanopia</option>
+      <option value="deuteranopia">Deuteranopia</option>
+      <option value="tritanopia">Tritanopia</option>
+    </select>
+  </div>
+
+  <a-scene id="sceneCB" renderer="antialias:true" xr-mode-ui="enabled:true">
+    <a-entity environment="preset: forest"></a-entity>
+
+    <a-entity id="cbWorld" position="0 1.4 -3" shadow="cast:true">
+      <a-box color="#FF0000" position="-1 0 0" depth="1" height="1" width="1"></a-box>
+      <a-box color="#00FF00" position="0 0 0" depth="1" height="1" width="1"></a-box>
+      <a-box color="#0000FF" position="1 0 0" depth="1" height="1" width="1"></a-box>
+    </a-entity>
+
+    <a-entity light="type: directional; intensity: 1" position="1 3 2"></a-entity>
+    <a-sky color="#EEE"></a-sky>
+
+    <a-entity laser-controls="hand: left"></a-entity>
+    <a-entity laser-controls="hand: right"></a-entity>
+  </a-scene>
+</div>
+
+<!-- ==========================================
+  2. SINGLE-SWITCH NAVIGATION
+=========================================== -->
+<div id="switch" class="scene-container">
+  <div class="info">
+    <strong>WCAG Relevance:</strong>  
+    • WCAG 2.1 Keyboard Accessible – all functionality must be operable via keyboard.  
+    • WCAG 2.5.2 Pointer Cancellation – avoid accidental activation.  
+    <br><br>
+    Cycle focus using SPACE. Confirm with ENTER.
+  </div>
+
+  <a-scene id="sceneSwitch" renderer="antialias:true" xr-mode-ui="enabled:true">
+    <a-entity environment="preset: yavapai"></a-entity>
+
+    <a-entity id="switchMenu" position="0 1.6 -2">
+      <a-plane class="menuItem" width="1.5" height="0.4" position="0 1 0"
+               text="value:Option A; align:center;" color="#555"></a-plane>
+      <a-plane class="menuItem" width="1.5" height="0.4" position="0 0.4 0"
+               text="value:Option B; align:center;" color="#555"></a-plane>
+      <a-plane class="menuItem" width="1.5" height="0.4" position="0 -0.2 0"
+               text="value:Option C; align:center;" color="#555"></a-plane>
+    </a-entity>
+
+    <a-sky color="#EEE"></a-sky>
+    <a-entity laser-controls="hand: right"></a-entity>
+  </a-scene>
+</div>
+
+<!-- ==========================================
+  3. MOTOR FATIGUE
+=========================================== -->
+<div id="fatigue" class="scene-container">
+  <div class="info">
+    <strong>WCAG Relevance:</strong>  
+    • WCAG 2.1.1 Keyboard – alternative input needed.  
+    • WCAG 2.5.1 Pointer Gestures – avoid complex gestures.  
+    <br><br>
+    Clicking gets harder as delay increases (simulated fatigue).
+  </div>
+
+  <a-scene id="sceneFatigue" renderer="antialias:true" xr-mode-ui="enabled:true">
+    <a-entity environment="preset: goldmine"></a-entity>
+
+    <a-sphere id="fatigueSphere" color="#FF8800" radius="0.5"
+              position="0 1.6 -2" shadow="cast:true"></a-sphere>
+    <a-entity id="fatigueText" position="0 2.3 -2"
+              text="value:Clicks: 0; align:center;"></a-entity>
+
+    <a-entity laser-controls="hand: right"></a-entity>
+  </a-scene>
+</div>
+
+<!-- ==========================================
+  4. SENSORY OVERLOAD
+=========================================== -->
+<div id="overload" class="scene-container">
+  <div class="warning">
+    WARNING: Flashing lights & chaotic visuals. Press ESC or select EXIT.
+  </div>
+
+  <div class="info">
+    <strong>WCAG Relevance:</strong>  
+    • WCAG 2.3.1 Seizures – no flashing more than 3 times per second.  
+    • WCAG 1.3.2 Meaningful Sequence – avoid chaotic layouts.  
+    <br><br>
+    This scene intentionally violates WCAG for demonstration.
+  </div>
+
+  <a-scene id="sceneOverload" renderer="antialias:true" xr-mode-ui="enabled:true">
+    <a-entity environment="preset: tron"></a-entity>
+
+    <a-box id="o1" position="-1 1.6 -3"></a-box>
+    <a-box id="o2" position="1 1.6 -3"></a-box>
+    <a-sphere id="o3" position="0 1.6 -2" radius="0.7"></a-sphere>
+
+    <a-plane id="exitOverload" position="0 0.5 -2" width="2" height="0.5"
+             color="#000" text="value:EXIT; align:center; color:#FFF;"></a-plane>
+
+    <a-entity laser-controls="hand: right"></a-entity>
+  </a-scene>
+</div>
+
+<!-- ==========================================
+  5. MEMORY CHALLENGE
+=========================================== -->
+<div id="memory" class="scene-container">
+  <div class="info">
+    <strong>WCAG Relevance:</strong>  
+    • WCAG 3.2.3 Consistent Navigation – users should not memorize structure.  
+    • WCAG 3.3.2 Labels or Instructions – hiding labels increases cognitive load.  
+    <br><br>
+    Choose the right block; no labels or breadcrumbs provided.
+  </div>
+
+  <a-scene id="sceneMemory" renderer="antialias:true" xr-mode-ui="enabled:true">
+    <a-entity environment="preset: egypt"></a-entity>
+
+    <a-entity id="maze" position="0 1.4 -3">
+      <a-box color="#888" position="-1 0 0"></a-box>
+      <a-box color="#888" position="1 0 0"></a-box>
+      <a-box color="#888" position="0 0 -1"></a-box>
+      <a-box color="#888" position="0 0 1"></a-box>
+    </a-entity>
+
+    <a-entity id="feedback" position="0 2.3 -3"
+              text="value:Choose carefully; align:center;"></a-entity>
+
+    <a-entity laser-controls="hand: right"></a-entity>
+  </a-scene>
+</div>
+
+<script>
+/* TAB SWITCHING */
+const tabButtons = document.querySelectorAll(".tabs button");
+const scenes = document.querySelectorAll(".scene-container");
+tabButtons.forEach(btn => {
+  btn.onclick = () => {
+    tabButtons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    scenes.forEach(s => s.classList.remove("active"));
+    document.getElementById(btn.dataset.target).classList.add("active");
+  };
+});
+
+/* 1. COLOR BLINDNESS */
+const cbSelect = document.getElementById("cbSelect");
+const colorMatrices = {
+  none: "none",
+  protanopia: "protanopia(1)",
+  deuteranopia: "deuteranopia(1)",
+  tritanopia: "tritanopia(1)"
+};
+cbSelect.onchange = () => {
+  document.getElementById("sceneCB").style.filter =
+    colorMatrices[cbSelect.value];
+};
+
+/* 2. SINGLE-SWITCH */
+let switchIndex = 0;
+const items = document.querySelectorAll("#switchMenu .menuItem");
+function highlight(idx) {
+  items.forEach(i => i.setAttribute("color", "#555"));
+  items[idx].setAttribute("color", "#00AEEF");
+}
+highlight(0);
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("switch").classList.contains("active")) return;
+  if (e.code === "Space") {
+    switchIndex = (switchIndex + 1) % items.length;
+    highlight(switchIndex);
+  }
+  if (e.code === "Enter") {
+    items[switchIndex].setAttribute("color", "#0F0");
+  }
+});
+
+/* 3. FATIGUE */
+let clicks = 0;
+let delay = 100;
+const fatigueSphere = document.getElementById("fatigueSphere");
+const fatigueText = document.getElementById("fatigueText");
+fatigueSphere.addEventListener("click", () => {
+  setTimeout(() => {
+    clicks++;
+    delay += 80;
+    fatigueText.setAttribute("text", "value:Clicks: " + clicks);
+  }, delay);
+});
+
+/* 4. SENSORY OVERLOAD */
+const flashingIDs = ["o1", "o2", "o3"];
+setInterval(() => {
+  if (!document.getElementById("overload").classList.contains("active")) return;
+  flashingIDs.forEach(id => {
+    const el = document.getElementById(id);
+    el.setAttribute("color", "#" + Math.floor(Math.random()*16777215).toString(16));
+    el.object3D.rotation.y += 0.25;
+  });
+}, 100);
+document.getElementById("exitOverload").addEventListener("click", () => {
+  document.querySelector("[data-target='cb']").click();
+});
+
+/* 5. MEMORY */
+document.querySelectorAll("#maze a-box").forEach(box => {
+  box.addEventListener("click", () => {
+    const correct = Math.random() > 0.5;
+    const fb = document.getElementById("feedback");
+    fb.setAttribute("text","value:"+(correct?"Correct!":"Wrong path"));
+  });
+});
+</script>
+
+</body>
+</html>
