@@ -237,7 +237,7 @@
       <div class="m-desc">Immersive 3-D environment. Walk between stations, gaze to activate each simulation.</div>
     </div>
   </div>
-  <p class="xr-note">Meta Quest: open in Quest Browser → choose VR mode → tap Enter VR</p>
+  <p class="xr-note">Meta Quest: open in Quest Browser → choose VR mode → tap </p>
 </div>
 
 <!-- ══ DESKTOP MODE ══ -->
@@ -813,6 +813,15 @@ window.addEventListener("click", () => {
   const scene = document.querySelector("#main-scene");
   if (!scene.is("vr-mode")) scene.enterVR();
 });
+
+if (navigator.userAgent.includes("OculusBrowser")) {
+  window.addEventListener("load", () => {
+    const scene = document.getElementById("main-scene");
+    if (scene && scene.enterVR) {
+      setTimeout(() => scene.enterVR(), 800);
+    }
+  });
+}
 
 const oldApply = applyVRSim;
 applyVRSim = function(simId){
