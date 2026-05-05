@@ -809,6 +809,11 @@ VR_SIM_MAP['memory'] = 'vr-memory';
 VR_SIM_MAP['tunnel'] = 'vr-tunnel';
 VR_SIM_MAP['adhd'] = 'vr-adhd';
 
+window.addEventListener("click", () => {
+  const scene = document.querySelector("#main-scene");
+  if (!scene.is("vr-mode")) scene.enterVR();
+});
+
 const oldApply = applyVRSim;
 applyVRSim = function(simId){
   oldApply(simId);
