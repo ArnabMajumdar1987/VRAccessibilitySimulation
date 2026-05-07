@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VR Accessibility Simulation – One-Handed & Motor Impairment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- =======================
+     GLOBAL STYLES
+     ======================= -->
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #000;
+        overflow: hidden;
+    }
+
+    /* Top-left floating UI panel */
+    #modePanel {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 9999;
+        background: rgba(255,255,255,0.92);
+        padding: 14px 18px;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        max-width: 260px;
+    }
+
+    #modePanel h2 {
+        margin: 0 0 10px 0;
+        font-size: 1.15rem;
+        color: #333;
+    }
+
+    #modePanel button {
+        display: block;
+        width: 100%;
+        margin-top: 6px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        background: #1976d2;
+        color: white;
+        font-size: 0.95rem;
+    }
+
+    #modePanel button.active {
+        background: #388e3c;
+    }
+
+    #modePanel button:hover {
+        opacity: 0.9;
+    }
+
+    /* VR text output area */
+    #typedOutput {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.9);
+        padding: 12px 18px;
+        border-radius: 10px;
+        max-width: 80vw;
+        font-size: 1.1rem;
+        z-index: 9999;
+        color: #222;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+
+    /* Keyboard key styles in VR (applied via A-Frame) */
+    .key-default {
+        background-color: #444;
+    }
+    .key-enabled {
+        background-color: #1976d2;
+    }
+    .key-disabled {
+        background-color: #555 !important;
+        opacity: 0.4 !important;
+    }
+
+    /* On-screen task instructions */
+    #taskPanel {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 9999;
+        background: rgba(255,255,255,0.92);
+        padding: 12px 16px;
+        border-radius: 10px;
+        max-width: 280px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+
+    #taskPanel h3 {
+        margin-top: 0;
+        font-size: 1.1rem;
+    }
+</style>
+
+<!-- ======================================
+     PLACEHOLDER FOR PART 2/7 (A-FRAME ENGINE)
+     ====================================== -->
+<!-- Part 2/7 will be inserted right below this comment -->
+
+
+<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js)"></script>
+</head>
+<body>
+
+<!-- =======================
+     ON-SCREEN UI PANELS
+     ======================= -->
+<div id="modePanel">
+    <h2>Accessibility Modes</h2>
+    <button id="mode-normal" class="active">Normal Mode</button>
+    <button id="mode-leftHand">Left-Hand Only</button>
+    <button id="mode-rightHand">Right-Hand Only</button>
+    <button id="mode-motor">Motor-Impaired</button>
+    <button id="mode-combined">Combined Disability</button>
+</div>
+
+<div id="taskPanel">
+    <h3>Typing Task</h3>
+    <div id="taskText">Task: Type the word "ACCESSIBILITY"</div>
+</div>
+
+<div id="typedOutput">
+    <b>Typed:</b> <span id="typedText"></span>
+</div>
+
+<!-- =======================
+     A-FRAME SCENE
+     ======================= -->
+<a-scene vr-mode-ui="enabled: true">
+
+    <!-- Camera + Gaze Cursor -->
+    <a-entity id="cameraRig">
+        <a-entity id="camera" camera look-controls wasd-controls="acceleration: 0">
+            <a-entity id="cursor"
+                cursor="fuse: true; fuseTimeout: 600"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
+                material="color: white; shader: flat">
+            </a-entity>
+        </a-entity>
+    </a-entity>
+
+    <!-- Ground -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#333"></a-plane>
+
+    <!-- Keyboard Container -->
+    <a-entity id="keyboard" position="0 1.1 -1.8" rotation="-20 0 0">
+
+        <!-- =======================
+             QWERTY KEYBOARD ROWS
+             ======================= -->
+
+        <!-- Row 1: Numbers -->
+        <a-entity id="row1">
+            <a-box class="key key-1" data-key="1" position="-1.8 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-2" data-key="2" position="-1.5 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-3" data-key="3" position="-1.2 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-4" data-key="4" position="-0.9 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-5" data-key="5" position="-0.6 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-6" data-key="6" position="-0.3 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-7" data-key="7" position="0.0 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-8" data-key="8" position="0.3 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-9" data-key="9" position="0.6 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-0" data-key="0" position="0.9 0.45 0" width="0.28" height="0.28" depth="0.1" color="#1976d2"></a-box>
+        </a-entity>
+
+        <!-- Row 2: QWERTY -->
+        <a-entity id="row2">
+            <a-box class="key key-q" data-key="Q" position="-1.7 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-w" data-key="W" position="-1.4 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-e" data-key="E" position="-1.1 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-r" data-key="R" position="-0.8 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-t" data-key="T" position="-0.5 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-y" data-key="Y" position="-0.2 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-u" data-key="U" position="0.1 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-i" data-key="I" position="0.4 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-o" data-key="O" position="0.7 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-p" data-key="P" position="1.0 0.15 0" width="0.3" height="0.3" depth="0.1" color="#1976d2"></a-box>
+        </a-entity>
+
+        <!-- Row 3: ASDF -->
+        <a-entity id="row3">
+            <a-box class="key key-a" data-key="A" position="-1.6 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-s" data-key="S" position="-1.28 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-d" data-key="D" position="-0.96 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-f" data-key="F" position="-0.64 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-g" data-key="G" position="-0.32 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+
+            <a-box class="key key-h" data-key="H" position="0.0 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-j" data-key="J" position="0.32 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-k" data-key="K" position="0.64 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-l" data-key="L" position="0.96 -0.15 0" width="0.32" height="0.32" depth="0.1" color="#1976d2"></a-box>
+        </a-entity>
+
+        <!-- Row 4: ZXCV -->
+        <a-entity id="row4">
+            <a-box class="key key-z" data-key="Z" position="-1.4 -0.45 0" width="0.34" height="0.34" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-x" data-key="X" position="-1.06 -0.45 0" width="0.34" height="0.34" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-c" data-key="C" position="-0.72 -0.45 0" width="0.34" height="0.34" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-v" data-key="V" position="-0.38 -0.45 0" width="0.34" height="0.34" depth="0.1" color="#1976d2"></a-box>
+
+            <a-box class="key key-b" data-key="B" position="-0.04 -0.45 0" width="0.34" height="0.34" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-n" data-key="N" position="0.30 -0.45 0" width="0.34" height="0.34" depth="0.1" color="#1976d2"></a-box>
+            <a-box class="key key-m" data-key="M" position="0.64 -0.45 0" width="0.34" height="0.34" depth="0.1" color="#1976d2"></a-box>
+        </a-entity>
+
+        <!-- Space bar -->
+        <a-box class="key key-space" data-key=" " position="-0.2 -0.85 0" width="1.6" height="0.35" depth="0.1" color="#1976d2"></a-box>
+
+        <!-- Enter, Backspace, Tab, Shift -->
+        <a-box class="key key-enter" data-key="ENTER" position="1.25 -0.15 0" width="0.5" height="0.9" depth="0.1" color="#1976d2"></a-box>
+        <a-box class="key key-backspace" data-key="BACK" position="1.25 0.45 0" width="0.5" height="0.28" depth="0.1" color="#1976d2"></a-box>
+        <a-box class="key key-tab" data-key="TAB" position="-2.0 0.15 0" width="0.4" height="0.3" depth="0.1" color="#1976d2"></a-box>
+        <a-box class="key key-shift" data-key="SHIFT" position="-2.0 -0.45 0" width="0.5" height="0.34" depth="0.1" color="#1976d2"></a-box>
+
+    </a-entity> <!-- End keyboard -->
+
+</a-scene>
+
+<!-- =======================
+     PART 4–6 SCRIPTS INSERTION POINT
+     ======================= -->
+<script id="logic">
+
+/* ==========================
+   PART 4/7 — DISABILITY MODE LOGIC
+   ========================== */
+
+// Collect all key elements once
+const allKeys = [...document.querySelectorAll(".key")];
+
+// Output display
+const typedTextEl = document.getElementById("typedText");
+
+// Mode buttons
+const modeNormalBtn = document.getElementById("mode-normal");
+const modeLeftHandBtn = document.getElementById("mode-leftHand");
+const modeRightHandBtn = document.getElementById("mode-rightHand");
+const modeMotorBtn = document.getElementById("mode-motor");
+const modeCombinedBtn = document.getElementById("mode-combined");
+
+// Cursor for adjusting fuse timeout
+const cursor = document.getElementById("cursor");
+
+// ----------------------------
+// KEY GROUPS FOR ONE-HAND LOGIC
+// ----------------------------
+
+// Keys reachable with LEFT hand (Q–T, A–G, Z–V, 1–5)
+const leftHandKeys = [
+    "1","2","3","4","5",
+    "Q","W","E","R","T",
+    "A","S","D","F","G",
+    "Z","X","C","V",
+];
+
+// Keys reachable with RIGHT hand (Y–P, H–L, B–M, 6–0)
+const rightHandKeys = [
+    "6","7","8","9","0",
+    "Y","U","I","O","P",
+    "H","J","K","L",
+    "B","N","M"
+];
+
+// Modifier keys to disable in limited modes
+const modifierKeys = ["SHIFT", "TAB", "ENTER", "BACK", "CTRL", "ALT"];
+
+// ----------------------------
+// HELPER FUNCTIONS
+// ----------------------------
+
+// Set all keys to enabled (normal mode)
+function enableAllKeys() {
+    allKeys.forEach(k => {
+        k.classList.remove("key-disabled");
+        k.classList.add("key-enabled");
+    });
+}
+
+// Disable specific keys (greyed out)
+function disableKeys(keyList) {
+    allKeys.forEach(k => {
+        const keyVal = k.dataset.key;
+        if (keyList.includes(keyVal)) {
+            k.classList.add("key-disabled");
+            k.classList.remove("key-enabled");
+        }
+    });
+}
+
+// Enable only keys in the allowed list
+function restrictToKeys(allowedKeys) {
+    allKeys.forEach(k => {
+        const keyVal = k.dataset.key;
+        if (allowedKeys.includes(keyVal)) {
+            k.classList.remove("key-disabled");
+            k.classList.add("key-enabled");
+        } else {
+            k.classList.add("key-disabled");
+            k.classList.remove("key-enabled");
+        }
+    });
+}
+
+// Change fuse timeout (slow activation for limited dexterity)
+function setFuse(ms) {
+    cursor.setAttribute("cursor", `fuse: true; fuseTimeout: ${ms}`);
+}
+
+// Clear typed text field
+function resetTypedText() {
+    typedTextEl.textContent = "";
+}
+
+// Utility: mark active button
+function activateButton(btn) {
+    [modeNormalBtn, modeLeftHandBtn, modeRightHandBtn, modeMotorBtn, modeCombinedBtn]
+    .forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+// -------------------------------------
+// MODE 0 — NORMAL
+// -------------------------------------
+modeNormalBtn.onclick = () => {
+    activateButton(modeNormalBtn);
+
+    enableAllKeys();
+    setFuse(600); // fast fuse
+    window.activeMode = "normal";
+    resetTypedText();
+
+    window.tremorActive = false;
+    window.missHitProb = 0;
+};
+
+// -------------------------------------
+// MODE 1 — LEFT HAND ONLY
+// -------------------------------------
+modeLeftHandBtn.onclick = () => {
+    activateButton(modeLeftHandBtn);
+
+    // Restrict keys
+    restrictToKeys(leftHandKeys);
+
+    // Disable modifiers
+    disableKeys(modifierKeys);
+
+    setFuse(1200);
+    window.activeMode = "left";
+    resetTypedText();
+
+    window.tremorActive = false;
+    window.missHitProb = 0;
+};
+
+// -------------------------------------
+// MODE 2 — RIGHT HAND ONLY
+// -------------------------------------
+modeRightHandBtn.onclick = () => {
+    activateButton(modeRightHandBtn);
+
+    restrictToKeys(rightHandKeys);
+    disableKeys(modifierKeys);
+
+    setFuse(1200);
+    window.activeMode = "right";
+    resetTypedText();
+
+    window.tremorActive = false;
+    window.missHitProb = 0;
+};
+
+// -------------------------------------
+// MODE 3 — MOTOR IMPAIRED
+// -------------------------------------
+modeMotorBtn.onclick = () => {
+    activateButton(modeMotorBtn);
+
+    enableAllKeys(); // keep full keyboard
+    setFuse(2000);   // very slow fuse
+    window.activeMode = "motor";
+
+    window.tremorActive = true;
+    window.missHitProb = 0.15;
+    resetTypedText();
+};
+
+// -------------------------------------
+// MODE 4 — COMBINED DISABILITY
+// -------------------------------------
+modeCombinedBtn.onclick = () => {
+    activateButton(modeCombinedBtn);
+
+    // Default to LEFT-hand restriction for combined mode
+    restrictToKeys(leftHandKeys);
+    disableKeys(modifierKeys);
+
+    setFuse(2200); // extremely slow fuse
+
+    window.activeMode = "combined";
+    window.tremorActive = true;
+    window.missHitProb = 0.22;
+    resetTypedText();
+};
+
+
+/* END OF PART 4/7 */
+
+
+/* ==========================
+   PART 5/7 — TREMOR + MIS-HIT + KEY PRESSING
+   ========================== */
+
+// Global state
+window.tremorActive = false;     // enabled in motor / combined modes
+window.missHitProb = 0;          // set by mode
+window.activeMode = "normal";    // current mode
+
+// Camera reference (for tremor)
+const camera = document.getElementById("camera");
+
+// ---------------------------------------------
+// 1. VERY LIGHT CAMERA TREMOR
+// ---------------------------------------------
+function applyTremor() {
+    if (!window.tremorActive) return;
+
+    // Very light micro jitter
+    const jitterX = (Math.random() - 0.5) * 0.002;  
+    const jitterY = (Math.random() - 0.5) * 0.002;
+
+    camera.object3D.position.x = jitterX;
+    camera.object3D.position.y = jitterY;
+}
+
+// Run tremor at 60Hz
+setInterval(applyTremor, 16);
+
+
+// ---------------------------------------------
+// 2. MIS-HIT PROBABILITY (HITS NEIGHBOR KEY)
+// ---------------------------------------------
+function chooseWithMisHit(key) {
+    if (Math.random() < window.missHitProb) {
+        // Find a random neighboring key
+        const possible = allKeys.filter(k => 
+            k !== key && 
+            Math.random() < 0.15   // 15% chance to be considered "adjacent"
+        );
+        if (possible.length > 0) {
+            return possible[Math.floor(Math.random() * possible.length)];
+        }
+    }
+    return key;
+}
+
+
+// ---------------------------------------------
+// 3. KEY PRESS HANDLER
+// ---------------------------------------------
+function pressKey(keyEl) {
+    if (keyEl.classList.contains("key-disabled")) return;
+
+    const label = keyEl.dataset.key;
+
+    // Special keys
+    if (label === "ENTER") {
+        typedTextEl.textContent += "\n";
+        return;
+    }
+    if (label === "BACK") {
+        typedTextEl.textContent = typedTextEl.textContent.slice(0, -1);
+        return;
+    }
+    if (label === "TAB") {
+        typedTextEl.textContent += "    ";
+        return;
+    }
+    if (label === "SHIFT") {
+        // SHIFT disabled in restricted modes
+        return;
+    }
+
+    // Normal character
+    typedTextEl.textContent += label;
+}
+
+
+// ---------------------------------------------
+// 4. REGISTER GAZE CLICK EVENTS
+// ---------------------------------------------
+allKeys.forEach(keyEl => {
+    keyEl.addEventListener("click", () => {
+
+        // Apply mis-hit logic
+        const finalKey = chooseWithMisHit(keyEl);
+
+        pressKey(finalKey);
+    });
+});
+
+/* END OF PART 5/7 */
+
+
+/* ==========================
+   PART 6/7 — MITIGATION FEATURES
+   ========================== */
+
+//
+// 1. Sticky Keys (makes Ctrl, Shift, Alt “toggle on”)
+//
+
+let stickyShift = false;
+let stickyCtrl = false;
+let stickyAlt = false;
+
+function toggleSticky(keyName) {
+    if (keyName === "SHIFT") stickyShift = !stickyShift;
+    if (keyName === "CTRL") stickyCtrl = !stickyCtrl;
+    if (keyName === "ALT") stickyAlt = !stickyAlt;
+}
+
+//
+// 2. Word Prediction Suggestions
+//
+const predictionWords = ["accessibility", "include", "keyboard", "support", "design"];
+const predictionPanel = document.createElement("div");
+
+predictionPanel.style.position = "fixed";
+predictionPanel.style.bottom = "80px";
+predictionPanel.style.left = "50%";
+predictionPanel.style.transform = "translateX(-50%)";
+predictionPanel.style.background = "rgba(255,255,255,0.92)";
+predictionPanel.style.padding = "10px 14px";
+predictionPanel.style.borderRadius = "8px";
+predictionPanel.style.zIndex = "9999";
+predictionPanel.style.display = "none";
+predictionPanel.style.fontSize = "1rem";
+predictionPanel.style.boxShadow = "0 4px 16px rgba(0,0,0,0.25)";
+
+document.body.appendChild(predictionPanel);
+
+function showPredictions() {
+    const txt = typedTextEl.textContent.toLowerCase();
+
+    const matches = predictionWords.filter(w => w.startsWith(txt) && txt.length > 1);
+
+    if (matches.length === 0) {
+        predictionPanel.style.display = "none";
+        return;
+    }
+
+    predictionPanel.innerHTML = "";
+    matches.forEach(word => {
+        const b = document.createElement("button");
+        b.textContent = word;
+        b.style.margin = "0 6px";
+        b.style.padding = "6px 10px";
+        b.style.cursor = "pointer";
+        b.style.border = "none";
+        b.style.background = "#1976d2";
+        b.style.color = "#fff";
+        b.style.borderRadius = "6px";
+        b.onclick = () => {
+            typedTextEl.textContent = word;
+            predictionPanel.style.display = "none";
+        };
+        predictionPanel.appendChild(b);
+    });
+
+    predictionPanel.style.display = "inline-block";
+}
+
+//
+// 3. Voice Input Sample Phrase
+//
+function insertVoiceSample() {
+    typedTextEl.textContent += " accessibility is improved with alternative input modes ";
+}
+
+//
+// 4. Larger Keys Mode
+//
+let largeKeysEnabled = false;
+
+function toggleLargeKeys() {
+    largeKeysEnabled = !largeKeysEnabled;
+
+    allKeys.forEach(k => {
+        if (largeKeysEnabled) {
+            k.setAttribute("scale", "1.3 1.3 1");
+        } else {
+            k.setAttribute("scale", "1 1 1");
+        }
+    });
+}
+
+//
+// 5. Add mitigation controls to UI panel
+//
+const modePanel = document.getElementById("modePanel");
+
+const stickyBtn = document.createElement("button");
+stickyBtn.textContent = "Toggle Sticky Keys";
+stickyBtn.onclick = () => { 
+    stickyShift = !stickyShift;
+    stickyCtrl = !stickyCtrl;
+    stickyAlt = !stickyAlt;
+};
+modePanel.appendChild(stickyBtn);
+
+const predictionBtn = document.createElement("button");
+predictionBtn.textContent = "Show Predictions";
+predictionBtn.onclick = showPredictions;
+modePanel.appendChild(predictionBtn);
+
+const voiceBtn = document.createElement("button");
+voiceBtn.textContent = "Voice Input Sample";
+voiceBtn.onclick = insertVoiceSample;
+modePanel.appendChild(voiceBtn);
+
+const bigKeyBtn = document.createElement("button");
+bigKeyBtn.textContent = "Toggle Large Keys";
+bigKeyBtn.onclick = toggleLargeKeys;
+modePanel.appendChild(bigKeyBtn);
+
+/* END OF PART 6/7 */
+
+/* ==========================
+   PART 7/7 — FINAL ASSEMBLY
+   ========================== */
+
+// Basic keyboard visual feedback (flash key on click)
+allKeys.forEach(keyEl => {
+    keyEl.addEventListener("click", () => {
+        const original = keyEl.getAttribute("color");
+        keyEl.setAttribute("color", "#ffeb3b");
+        setTimeout(() => keyEl.setAttribute("color", original), 120);
+    });
+});
+
+// Disable tremor when VR session ends
+document.addEventListener("exit-vr", () => {
+    window.tremorActive = false;
+});
+
+// Update predictions as user types
+setInterval(showPredictions, 300);
+
+/* END OF ALL LOGIC */
+</script>
+
+</body>
+</html>
+
+
+</script>
+
+
